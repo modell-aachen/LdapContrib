@@ -492,7 +492,7 @@ sub getAccount {
   #writeDebug("called getAccount($login)");
   return undef if $this->{excludeMap}{$login};
 
-  $login = lc($login) if ( $this->{caseSensitivity} eq 'off' );
+  $login = $this->locale_lc($login) if ( $this->{caseSensitivity} eq 'off' );
 
   my $loginFilter = $this->{loginFilter};
   $loginFilter = "($loginFilter)" unless $loginFilter =~ /^\(.*\)$/;
@@ -540,6 +540,7 @@ sub search {
   my ($this, %args) = @_;
 
   $args{base} = $this->{base} unless $args{base};
+  $args{base} = toUtf8($args{base});
   $args{scope} = 'sub' unless $args{scope};
   $args{sizelimit} = 0 unless $args{sizelimit};
   $args{attrs} = ['*'] unless $args{attrs};
@@ -1075,7 +1076,7 @@ sub cacheUserFromEntry {
     return 0;
   }
   
-  $loginName = lc($loginName) if ( $this->{caseSensitivity} eq 'off' );
+  $loginName = $this->locale_lc($loginName) if ( $this->{caseSensitivity} eq 'off' );
   $loginName = $this->fromUtf8($loginName);
 
   # 2. normalize
@@ -1749,7 +1750,7 @@ sub getWikiNameOfLogin {
 
   #writeDebug("called getWikiNameOfLogin($loginName)");
 
-  $loginName = lc($loginName) if ( $this->{caseSensitivity} eq 'off' );
+  $loginName = $this->locale_lc($loginName) if ( $this->{caseSensitivity} eq 'off' );
 
   $data ||= $this->{data};
 
@@ -1832,7 +1833,7 @@ returns the Distinguished Name of the LDAP record of the given name
 sub getDnOfLogin {
   my ($this, $loginName, $data) = @_;
   
-  $loginName = lc($loginName) if ( $this->{caseSensitivity} eq 'off' );
+  $loginName = $this->locale_lc($loginName) if ( $this->{caseSensitivity} eq 'off' );
   return unless $loginName;
 
   $data ||= $this->{data};
@@ -2356,7 +2357,8 @@ sub toUtf8 {
   my ($this, $string) = @_;
 
   my $charset = $Foswiki::cfg{Site}{CharSet};
-  return $string if $charset =~ /^utf-?8$/i;
+  # ItemXXXXX: make sure that even if it's already UTF-8, we definitely get a byte string
+  return $string if $charset =~ /^utf-?8$/i && ($] < 5.008 || !Encode::is_utf8($string));
 
   if ($] < 5.008) {
 
@@ -2382,6 +2384,20 @@ sub toUtf8 {
       return Encode::encode('utf-8', $octets);
     }
   }
+}
+
+sub locale_lc {
+  my ($this, $string) = @_;
+  my $charset = $Foswiki::cfg{Site}{CharSet};
+  require Encode;
+  my $encoding = Encode::resolve_alias($charset);
+  return $string unless $encoding;
+  my $already_unicode = Encode::is_utf8($string);
+  $string = Encode::decode($encoding, $string) unless $already_unicode;
+  use locale;
+  $string = lc $string;
+  $string = Encode::encode($encoding, $string) unless $already_unicode;
+  return $string;
 }
 
 1;
