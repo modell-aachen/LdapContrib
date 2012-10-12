@@ -540,7 +540,7 @@ sub search {
   my ($this, %args) = @_;
 
   $args{base} = $this->{base} unless $args{base};
-  $args{base} = toUtf8($args{base});
+  $args{base} = $this->toUtf8($args{base});
   $args{scope} = 'sub' unless $args{scope};
   $args{sizelimit} = 0 unless $args{sizelimit};
   $args{attrs} = ['*'] unless $args{attrs};
