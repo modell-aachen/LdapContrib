@@ -68,6 +68,7 @@ sub loadSession {
   # explicitly untaint it as this string comes from LDAP, and all strings
   # from LDAP are tainted, even if they come via mod_ldap
   $authUser = Foswiki::Sandbox::untaintUnchecked($authUser);
+  my $origAuthUser = $authUser;
 
   # process authUser login name
   if (defined $authUser) {
@@ -85,6 +86,8 @@ sub loadSession {
 
     unless ($this->{ldap}{excludeMap}{$authUser}) {
       $this->{ldap}->checkCacheForLoginName($authUser);
+    } else {
+      return $origAuthUser;
     }
   }
 

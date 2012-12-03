@@ -255,7 +255,12 @@ sub new {
   @{$this->{wikiNameAttributes}} = split(/\s*,\s*/, $this->{wikiNameAttribute});
 
   # create exclude map
-  my %excludeMap = map {$_ => 1} split(/\s*,\s*/, $this->{exclude});
+  my %excludeMap;
+  if ($this->{caseSensitivity} eq 'on') {
+    %excludeMap = map {$_ => 1} split(/\s*,\s*/, $this->{exclude});
+  } else {
+    %excludeMap = map {$_ => 1, $this->locale_lc($_) => 1} split(/\s*,\s*/, $this->{exclude});
+  }
   $this->{excludeMap} = \%excludeMap;
 
   # creating alias map

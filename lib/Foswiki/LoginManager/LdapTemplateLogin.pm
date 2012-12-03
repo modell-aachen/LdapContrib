@@ -64,6 +64,7 @@ sub loadSession {
   my $this = shift;
 
   my $authUser = $this->SUPER::loadSession(@_);
+  my $origAuthUser = $authUser;
 
   # explicitly untaint it as this string comes from LDAP, and all strings
   # from LDAP are tainted, even if they come via mod_ldap
@@ -85,6 +86,8 @@ sub loadSession {
 
     unless ($this->{ldap}{excludeMap}{$authUser}) {
       $this->{ldap}->checkCacheForLoginName($authUser);
+    } else {
+      return $origAuthUser;
     }
   }
 
