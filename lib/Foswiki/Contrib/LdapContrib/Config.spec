@@ -154,6 +154,18 @@ $Foswiki::cfg{Ldap}{RewriteWikiNames} = {
   '^(.*)@.*$' => '$1'
 };
 
+# **PERL**
+# A mapping of rewrite rules. Works just like the previous setting, but
+# now applies to login names. This might be useful for migrating to a different
+# structure of the underlying authentication database. Rules are applied in
+# order; rewriting stops after the first rules matches. Rules have the form
+# <pre>[
+#   ['pattern1' => 'substitute1',
+#   ['pattern2' => 'substitute2'
+# ]</pre>
+$Foswiki::cfg{Ldap}{RewriteLoginNames} = [
+];
+
 # **BOOLEAN**
 # Allow/disallow changing the LDAP password using the ChangePassword feature
 $Foswiki::cfg{Ldap}{AllowChangePassword} = 0;

@@ -190,6 +190,7 @@ sub new {
     mapGroups=>$Foswiki::cfg{Ldap}{MapGroups} || 0,
     rewriteGroups=>$Foswiki::cfg{Ldap}{RewriteGroups} || {},
     rewriteWikiNames=>$Foswiki::cfg{Ldap}{RewriteWikiNames} || {},
+    rewriteLoginNames=>$Foswiki::cfg{Ldap}{RewriteLoginNames} || [],
     mergeGroups=>$Foswiki::cfg{Ldap}{MergeGroups} || 0,
 
     mailAttribute=>$Foswiki::cfg{Ldap}{MailAttribute} || 'mail',
@@ -1074,6 +1075,7 @@ sub cacheUserFromEntry {
 
   # 1. get it
   my $loginName = $entry->get_value($this->{loginAttribute});
+  return 0 unless defined $loginName;
   $loginName =~ s/^\s+//o;
   $loginName =~ s/\s+$//o;
   unless ($loginName) {
@@ -1085,6 +1087,7 @@ sub cacheUserFromEntry {
   $loginName = $this->fromUtf8($loginName);
 
   # 2. normalize
+  $loginName = $this->rewriteLoginName($loginName);
   $loginName = $this->normalizeLoginName($loginName) if $this->{normalizeLoginName};
   return 0 if $this->{excludeMap}{$loginName};
 
@@ -1421,6 +1424,39 @@ sub normalizeLoginName {
   $name =~ s/[^$Foswiki::cfg{LoginNameFilterIn}]//;
 
   return $name;
+}
+
+=pod
+
+---++ rewriteLoginName($name) -> $string
+
+=cut
+
+sub rewriteLoginName {
+  my ($this, $name) = @_;
+
+  foreach my $rule (@{$this->{rewriteLoginNames}}) {
+    my $pattern = $rule->[0];
+    my $subst = $rule->[1];
+    if ($name =~ /^(?:$pattern)$/) {
+      my $arg1 = $1;
+      my $arg2 = $2;
+      my $arg3 = $3;
+      my $arg4 = $4;
+      my $arg5 = $5;
+      $arg1 = '' unless defined $arg1;
+      $arg2 = '' unless defined $arg2;
+      $arg3 = '' unless defined $arg3;
+      $arg4 = '' unless defined $arg4;
+      $subst =~ s/\$1/$arg1/g;
+      $subst =~ s/\$2/$arg2/g;
+      $subst =~ s/\$3/$arg3/g;
+      $subst =~ s/\$4/$arg4/g;
+      $subst =~ s/\$5/$arg5/g;
+      writeDebug("rewriting '$name' to '$subst' using rule $pattern"); 
+      return $subst;
+    }
+    return $name;
 }
 
 =pod
