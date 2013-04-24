@@ -1456,7 +1456,8 @@ sub rewriteLoginName {
       writeDebug("rewriting '$name' to '$subst' using rule $pattern"); 
       return $subst;
     }
-    return $name;
+  }
+  return $name;
 }
 
 =pod
