@@ -1352,7 +1352,7 @@ sub cacheGroupFromEntry {
 
   # fetch all members of this group
   my $memberVals = $entry->get_value($this->{memberAttribute}, alloptions => 1);
-  my @members = @{$memberVals->{''}};
+  my @members = (defined($memberVals) && exists($memberVals->{''})) ? @{$memberVals->{''}} : ();
   my $addMember = sub {
     my $member;
     while ($member = shift) {
@@ -1374,6 +1374,7 @@ sub cacheGroupFromEntry {
         ($rangeEnd, $members) = ($1, $memberVals->{$k});
         last;
       }
+      last if !defined $rangeEnd;
       $addMember->(@$members);
       last if $rangeEnd eq '*';
       $rangeEnd++;
