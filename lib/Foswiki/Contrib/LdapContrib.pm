@@ -1356,7 +1356,7 @@ sub cacheGroupFromEntry {
   my $addMember = sub {
     my $member;
     while ($member = shift) {
-      next unless $member;
+      next unless defined $member;
       $member =~ s/^\s+//o;
       $member =~ s/\s+$//o;
       $this->{_groups}{$groupName}{$member} = 1; # delay til all groups have been fetched
