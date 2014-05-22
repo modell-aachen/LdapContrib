@@ -1,16 +1,8 @@
-%META:TOPICINFO{author="ProjectContributor" date="1291110482" format="1.1" version="3"}%
+%META:TOPICINFO{author="ProjectContributor" comment="autosave" date="1356278775" format="1.1" version="4"}%
+
 ---+!! %TOPIC%
 %TOC%
 ---++ Introduction
-<table style="float:right">
-<tr>
-  <td><img src="%ATTACHURLPATH%/wikiringlogo40x40.png"></td>
-  <td><a href="http://wikiring.com" title="Make your Wiki ring!" style="text-decoration:none">
-      Powered by <br /> <nop>WikiRing Consultants </a>
-  </td>
-</tr>
-</table>
-
 This package offers basic LDAP services for Foswiki and offers authentication of
 wiki users by binding to an LDAP server as well as incorporate LDAP user
 groups into access control. 
@@ -185,6 +177,14 @@ The login name can be normalized by enabling the
 setting. This will also strip off any '<nop>@...' string from the login as found
 when logging ing using the mail attribute or when using !LdapContrib in combination
 with a kerberos single sign on strategy.
+
+In most scenarios users prefer not to care about case sensitivity of their login names
+for convenience. If however your authentication requires an exact match of the login name
+including case sensitivity, the use
+
+<verbatim>$Foswiki::cfg{Ldap}{CaseSensitiveLogin} = 1;</verbatim>
+
+to switch that on.
 
 Similar to the <nop>WikiName of a user, group names can be normalized using
 
@@ -391,17 +391,28 @@ Use the following settings for the above example:
 <verbatim>
 $Foswiki::cfg{Ldap}{Host} = 'ldap.my.domain.com';
 $Foswiki::cfg{Ldap}{Port} = 389; 
-$Foswiki::cfg{Ldap}{UserBase} = 'ou=people,dc=my,dc=domain,dc=com'; 
+$Foswiki::cfg{Ldap}{UserBase} = ['ou=people,dc=my,dc=domain,dc=com']; 
 $Foswiki::cfg{Ldap}{LoginFilter} = 'objectClass=posixAccount';
 $Foswiki::cfg{Ldap}{LoginAttribute} = 'uid';
 $Foswiki::cfg{Ldap}{WikiNameAttributes} = 'cn';
 $Foswiki::cfg{Ldap}{NormalizeWikiNames} = 1; 
-$Foswiki::cfg{Ldap}{GroupBase} = 'ou=group,dc=my,dc=domain,dc=com';
+$Foswiki::cfg{Ldap}{GroupBase} = ['ou=group,dc=my,dc=domain,dc=com'];
 $Foswiki::cfg{Ldap}{GroupFilter} = 'objectClass=posixGroup';
 $Foswiki::cfg{Ldap}{GroupAttribute} = 'cn';
 $Foswiki::cfg{Ldap}{MemberAttribute} = 'memberUid';
 $Foswiki::cfg{Ldap}{MemberIndirection} = 0;
 $Foswiki::cfg{Ldap}{MapGroups} = 1;
+</verbatim>
+
+---++ LDAPS
+
+<verbatim>
+$Foswiki::cfg{Ldap}{Host} = 'ldaps://ldap.my.domain.com';
+$Foswiki::cfg{Ldap}{Port} = 636;
+$Foswiki::cfg{Ldap}{TLSCAPath} = '/etc/openldap/cacerts/';
+$Foswiki::cfg{Ldap}{TLSCAFile} = 'cer.pem';
+$Foswiki::cfg{Ldap}{TLSClientCert} = 'cer.pem';
+$Foswiki::cfg{Ldap}{TLSClientKey} = 'cer.key';
 </verbatim>
 
 ---++ Configuration
@@ -488,13 +499,30 @@ This work was partly sponsored by
    * [[http://www.ibm.com][IBM]]
    * [[http://www.dfs.de][Deutsche Flugsicherung]]
    * [[http://www.testo.de][Testo]]
+   * [[http://www.1and1.com][1&1]]
 
 |  Author: | Michael Daum |
-|  Copyright&nbsp;&copy;: | 2006-2012 Michael Daum http://michaeldaumconsulting.com |
+|  Copyright&nbsp;&copy;: | 2006-2014 Michael Daum http://michaeldaumconsulting.com |
 |  License: | GPL ([[http://www.gnu.org/copyleft/gpl.html][GNU General Public License]]) |
 |  Release: | %$RELEASE% |
 |  Version: | %$VERSION% |
 |  Change History: | <!-- versions below in reverse order -->&nbsp; |
+|  18 Nov 2014: | using proper locking when updating the ldap cache (Foswiki:Main/TerjeNessAndersen); \
+                  rewrite of name clash resolution to use login attributes, not DNs anymore |
+|  29 Nov 2012: | fixed decoding of ldap strings |
+|  21 Nov 2012: | fixed ldap login manager using old api; \
+                  fixed recursive traversal of distributed ldap directories; \
+                  storing all blobs into a subdirectory of their own reachable by the web server |
+|  19 Nov 2012: | fixed non-paged requests no terminating; \
+                  fixed encoding of baseDN in search; \
+                  fixed case comparison when excluding wiki names; \
+                  added support for non-utf8 ldap directories |
+|  11 Nov 2012: | added support for multiple subtrees searching for users and groups |
+|  09 Nov 2012: | add support for ldap referrals and references for distributed ldap directories |
+|  17 Oct 2012: | Item12159: added =passwords_modifyable= context to re-enable changing passwords from the core topics (by Sven Dowideit) |
+|  10 Jul 2012: | improved unicode transliteration; fixed error in regular expression testing for unknown users and groups (by Jim Hague) |
+|  26 Jun 2012: | added =CaseSensitiveLogin= feature, defaulting to =off=; \
+                  performance improvements looking up the ldap cache (by Jayen Ashar) |
 |  11 Jan 2012: | fixed using !ListIterators on undefined list values |
 |  20 Dec 2011: | fixes deep recursion when adding !AdminGroup to !AdminGroup; fixed sizelimit not properly being applied to ldap query; disabled expensive debug message |
 |  16 Dec 2010: | implemented new =expand= feature of =GROUPINFO= found in newer foswikis |
@@ -539,7 +567,7 @@ This work was partly sponsored by
 |  12 Jun 2008: | added workarounds to use LDAP and <nop>MailInContrib on TWiki-4.2.0 |
 |  25 May 2008: | added alias feature, \
                   fixed normalization error, \
-                  fixed cache update issue\
+                  fixed cache update issue \
                   added login manager for 4.2 |
 |  05 May 2008: | implemented !WikiNamesAliases |
 |  14 Feb 2008: | allow to disable cache aging setting <nop>MaxCacheAge to zero |
@@ -549,7 +577,7 @@ This work was partly sponsored by
 |  21 Dec 2007: | added <nop>LdapApacheLogin, \
                   made updating the cache quasi atomic |
 |  22 Nov 2007: | fixed recognition of <nop>WikiGroups in a mixed setting |
-|  05 Oct 2007: | enabled native user registration using the secondary password manager;\
+|  05 Oct 2007: | enabled native user registration using the secondary password manager; \
                   added support to change a user's LDAP password from within TWiki; \
                   added patch for =TWiki.pm= that backports some of the fixes from TWiki-4.2 \
                   to TWiki-4.1.2 |
@@ -561,7 +589,7 @@ This work was partly sponsored by
                    don't lookup login names of groups |
 |  04 June 2007: | don't be case sensitive for login names; \
                    fixed several utf8 issues; \
-                   fixed crash when no groups where found;\
+                   fixed crash when no groups where found; \
                    caching mapping privately; added <nop>MaxCacheAge; \
                    added support for nested LDAP groups |
 |  30 Apr 2007: | fixed return value on illegal lookup calls |
@@ -574,7 +602,7 @@ This work was partly sponsored by
                   renamed <nop>BasePasswd config parameter to <nop>UserBase; \
                   renamed <nop>BaseGroup config parameter to <nop>GroupBase; \
                   working around broken =configure= in 4.1.x |
-|  12 Jan 2007: | enhanced normalization of <nop>WikiNames so that they are proper <nop>WikiWords;\
+|  12 Jan 2007: | enhanced normalization of <nop>WikiNames so that they are proper <nop>WikiWords; \
                   <nop>WikiNames can be constructed from a list of \
                   LDAP attributes now |
 |  18 Dec 2006: | various performance improvements; \
@@ -583,12 +611,12 @@ This work was partly sponsored by
                   support for large databases using paged LDAP search results; \
                   new configuration option "Exclude" to exclude standard TWiki user accounts, e.g. <nop>RegistrationAgent, \
                   from being looked up in LDAP; \
-                  added support for faster API implementing =isMemberOf=;\
+                  added support for faster API implementing =isMemberOf=; \
                   added Config.spec file to integrate the <nop>LdapContrib into TWiki's "configure" tool; \
                   added support for <nop>WikiNames derived from mail attributes |
 |  03 Nov 2006: | fixed binding to the server by first searching the full dn instead of assuming a fixed one \
                   (issue found by Cederic Weber); \
-                  added new feature <nop>MapGroup to be able to switch off group mapping and have ;\
+                  added new feature <nop>MapGroup to be able to switch off group mapping and have; \
                   login-to-wikiname conversion only |
 |  02 Aug 2006: | added a user accounts in memory cache |
 |  19 July 2006: | public release |
@@ -596,6 +624,3 @@ This work was partly sponsored by
 |  28 Apr 2006: | Initial version |
 |  Home: | Foswiki:Extensions/%TOPIC% |
 |  Support: | Foswiki:Support/%TOPIC% |
-
-
-%META:FILEATTACHMENT{name="wikiringlogo40x40.png" attr="h" autoattached="0" comment="" date="1190996093" path="wikiringlogo40x40.png" size="2571" user="ProjectContributor" version="1"}%

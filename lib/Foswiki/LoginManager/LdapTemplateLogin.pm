@@ -45,7 +45,7 @@ Construct the <nop>LdapApacheLogin object
 sub new {
   my ($class, $session) = @_;
 
-  my $this = bless( $class->SUPER::new($session), $class );
+  my $this = bless($class->SUPER::new($session), $class);
 
   $this->{ldap} = Foswiki::Contrib::LdapContrib::getLdapContrib($session);
   return $this;
@@ -77,9 +77,9 @@ sub loadSession {
 
     $authUser =~ s/^\s+//o;
     $authUser =~ s/\s+$//o;
-    $authUser = $this->{ldap}->fromUtf8($authUser);
+    $authUser = $this->{ldap}->fromLdapCharSet($authUser);
 
-    $authUser = $this->{ldap}->locale_lc($authUser) if ( $this->{ldap}{caseSensitivity} eq 'off' ); # TODO
+    $authUser = $this->{ldap}->locale_lc($authUser) unless $this->{ldap}{caseSensitiveLogin};
     $authUser = $this->{ldap}->rewriteLoginName($authUser);
     $authUser = $this->{ldap}->normalizeLoginName($authUser) if $this->{ldap}{normalizeLoginName};
 
