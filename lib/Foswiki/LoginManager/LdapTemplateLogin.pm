@@ -79,7 +79,7 @@ sub loadSession {
     $authUser =~ s/\s+$//o;
     $authUser = $this->{ldap}->fromUtf8($authUser);
 
-    $authUser = $this->{ldap}->locale_lc($authUser) if ( $this->{ldap}{caseSensitivity} eq 'off' ); # TODO
+    $authUser = $this->{ldap}->locale_lc($authUser) unless $this->{ldap}{caseSensitivity}; # TODO
     $authUser = $this->{ldap}->rewriteLoginName($authUser);
     $authUser = $this->{ldap}->normalizeLoginName($authUser) if $this->{ldap}{normalizeLoginName};
 

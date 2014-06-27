@@ -106,10 +106,10 @@ $Foswiki::cfg{Ldap}{UserScope} = 'sub';
 # used to login.
 $Foswiki::cfg{Ldap}{LoginAttribute} = 'uid';
 
-# **STRING**
+# **BOOLKEAN**
 # The case sensitivity attribute. This is the attribute name used to enable
-# case insensitivity.
-$Foswiki::cfg{Ldap}{CaseSensitivity} = 'on';
+# case sensitivity for usernames.
+$Foswiki::cfg{Ldap}{CaseSensitivity} = 1;
 
 # **STRING**
 # The user mail attribute. This is the attribute name used to fetch

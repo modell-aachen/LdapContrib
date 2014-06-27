@@ -164,7 +164,7 @@ sub new {
       || 'sub',
 
     loginAttribute=>$Foswiki::cfg{Ldap}{LoginAttribute} || 'uid',
-    caseSensitivity=>$Foswiki::cfg{Ldap}{CaseSensitivity} || 'on',
+    caseSensitivity=>$Foswiki::cfg{Ldap}{CaseSensitivity},
     allowChangePassword=>$Foswiki::cfg{Ldap}{AllowChangePassword} || 0,
 
     wikiNameAttribute=>$Foswiki::cfg{Ldap}{WikiNameAttributes} 
@@ -257,7 +257,7 @@ sub new {
 
   # create exclude map
   my %excludeMap;
-  if ($this->{caseSensitivity} eq 'on') {
+  if $this->{caseSensitivity} {
     %excludeMap = map {$_ => 1} split(/\s*,\s*/, $this->{exclude});
   } else {
     %excludeMap = map {$_ => 1, $this->locale_lc($_) => 1} split(/\s*,\s*/, $this->{exclude});
@@ -498,7 +498,7 @@ sub getAccount {
   #writeDebug("called getAccount($login)");
   return undef if $this->{excludeMap}{$login};
 
-  $login = $this->locale_lc($login) if ( $this->{caseSensitivity} eq 'off' );
+  $login = $this->locale_lc($login) unless $this->{caseSensitivity};
 
   my $loginFilter = $this->{loginFilter};
   $loginFilter = "($loginFilter)" unless $loginFilter =~ /^\(.*\)$/;
@@ -1083,7 +1083,7 @@ sub cacheUserFromEntry {
     return 0;
   }
   
-  $loginName = $this->locale_lc($loginName) if ( $this->{caseSensitivity} eq 'off' );
+  $loginName = $this->locale_lc($loginName) unless $this->{caseSensitivity};
   $loginName = $this->fromUtf8($loginName);
 
   # 2. normalize
@@ -1828,7 +1828,7 @@ sub getWikiNameOfLogin {
 
   #writeDebug("called getWikiNameOfLogin($loginName)");
 
-  $loginName = $this->locale_lc($loginName) if ( $this->{caseSensitivity} eq 'off' );
+  $loginName = $this->locale_lc($loginName) unless $this->{caseSensitivity};
 
   $data ||= $this->{data};
 
@@ -1911,7 +1911,7 @@ returns the Distinguished Name of the LDAP record of the given name
 sub getDnOfLogin {
   my ($this, $loginName, $data) = @_;
   
-  $loginName = $this->locale_lc($loginName) if ( $this->{caseSensitivity} eq 'off' );
+  $loginName = $this->locale_lc($loginName) unless $this->{caseSensitivity};
   return unless $loginName;
 
   $data ||= $this->{data};
