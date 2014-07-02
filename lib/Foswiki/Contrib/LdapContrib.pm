@@ -1978,6 +1978,25 @@ sub getWikiNameOfDn {
 
 =pod 
 
+---++ getDisplayAttributesOfLogin($login, $data) -> $displayAttributes
+
+returns the login's display attributes as a hashref
+
+=cut
+
+sub getDisplayAttributesOfLogin {
+  my ($this, $login, $data) = @_;
+
+  return unless $login;
+
+  $data ||= $this->{data};
+
+  return decode_json(Foswiki::Sandbox::untaintUnchecked($data->{"U2DIS::$login"}));
+}
+
+
+=pod 
+
 ---++ changePassword($loginName, $newPassword, $oldPassword) -> $boolean
 
 =cut
