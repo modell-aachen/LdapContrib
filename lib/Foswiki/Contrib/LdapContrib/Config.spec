@@ -117,6 +117,11 @@ $Foswiki::cfg{Ldap}{CaseSensitivity} = 'on';
 $Foswiki::cfg{Ldap}{MailAttribute} = 'mail';
 
 # **STRING**
+# Comma-separated list of extra fields to cache (as a JSON object) for display
+# purposes.
+$Foswiki::cfg{Ldap}{DisplayAttributes} = 'displayName';
+
+# **STRING**
 # The user's wiki name attribute. This is the attribute to generate
 # the WikiName from. 
 $Foswiki::cfg{Ldap}{WikiNameAttributes} = 'cn';
