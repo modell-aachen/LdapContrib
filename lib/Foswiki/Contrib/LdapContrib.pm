@@ -256,6 +256,7 @@ sub new {
     unless defined $this->{normalizeGroupName};
 
   @{$this->{wikiNameAttributes}} = split(/\s*,\s*/, $this->{wikiNameAttribute});
+  @{$this->{displayAttributes}} = split(/\s*,\s*/, $this->{displayAttributes});
 
   # create exclude map
   my %excludeMap;
@@ -786,7 +787,8 @@ sub refreshUsersCache {
     attrs=>[$this->{loginAttribute}, 
             $this->{mailAttribute},
             $this->{primaryGroupAttribute},
-            @{$this->{wikiNameAttributes}}
+            @{$this->{wikiNameAttributes}},
+            @{$this->{displayAttributes}},
           ],
   );
 
@@ -1231,7 +1233,7 @@ sub cacheUserFromEntry {
   # store extra display fields
   if ($this->{displayAttributes}) {
     my $extradata = {};
-    for my $attr (split(/\s*,\s*/, $this->{displayAttributes})) {
+    for my $attr (@{$this->{displayAttributes}}) {
       $extradata->{$attr} = $entry->get_value($attr);
     }
     $data->{"U2DIS::$loginName"} = encode_json($extradata);
