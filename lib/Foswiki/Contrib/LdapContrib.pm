@@ -256,7 +256,7 @@ sub new {
     unless defined $this->{normalizeGroupName};
 
   @{$this->{wikiNameAttributes}} = split(/\s*,\s*/, $this->{wikiNameAttribute});
-  @{$this->{displayAttributes}} = split(/\s*,\s*/, $this->{displayAttributes});
+  $this->{displayAttributes} = [ split(/\s*,\s*/, $this->{displayAttributes}) ];
 
   # create exclude map
   my %excludeMap;
