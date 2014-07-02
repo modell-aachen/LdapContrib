@@ -22,6 +22,7 @@ use Net::LDAP;
 use Net::LDAP::Constant qw(LDAP_SUCCESS LDAP_SIZELIMIT_EXCEEDED LDAP_CONTROL_PAGED);
 use Net::LDAP::Extension::SetPassword;
 use DB_File;
+use JSON;
 
 use Foswiki::Func ();
 use Foswiki::Plugins ();
@@ -194,6 +195,7 @@ sub new {
     mergeGroups=>$Foswiki::cfg{Ldap}{MergeGroups} || 0,
 
     mailAttribute=>$Foswiki::cfg{Ldap}{MailAttribute} || 'mail',
+    displayAttributes=>$Foswiki::cfg{Ldap}{DisplayAttributes} || 'displayName',
 
     exclude=>$Foswiki::cfg{Ldap}{Exclude} || 
       'WikiGuest, ProjectContributor, RegistrationAgent, AdminGroup, NobodyGroup',
@@ -1225,6 +1227,15 @@ sub cacheUserFromEntry {
   $data->{"DN2U::$dn"} = $loginName;
   $data->{"U2DN::$loginName"} = $dn;
   $data->{"U2EMAIL::$loginName"} = join(',',@$emails);
+
+  # store extra display fields
+  if ($this->{displayAttributes}) {
+    my $extradata = {};
+    for my $attr (split(/\s*,\s*/, $this->{displayAttributes})) {
+      $extradata->{$attr} = $entry->get_value($attr);
+    }
+    $data->{"U2DIS::$loginName"} = encode_json($extradata);
+  }
 
   if ($emails) {
     foreach my $email (@$emails) {
