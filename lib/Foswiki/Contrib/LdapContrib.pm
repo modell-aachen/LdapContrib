@@ -1991,7 +1991,7 @@ sub getDisplayAttributesOfLogin {
 
   $data ||= $this->{data};
 
-  return decode_json(Foswiki::Sandbox::untaintUnchecked($data->{"U2DIS::$login"}));
+  return decode_json(Foswiki::Sandbox::untaintUnchecked($data->{"U2DIS::$login"} || "{}"));
 }
 
 
