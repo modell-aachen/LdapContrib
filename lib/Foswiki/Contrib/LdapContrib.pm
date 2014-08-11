@@ -716,6 +716,13 @@ sub refreshCache {
     return 0;
   }
 
+  # check for BDB temp file getting stuck
+  my $bdbTempCacheFile = '__db.'.$tempCacheFile;
+  # SMELL: may want to make this threshold configurable -krueger@modell-aachen.de
+  if (-e $bdbTempCacheFile && (time - [stat($bdbTempCacheFile)]->[10]) > 900 ) {
+    unlink($bdbTempCacheFile);
+  }
+
   my %tempData;
   my $tempCache = 
     tie %tempData, 'DB_File', $tempCacheFile, O_CREAT|O_RDWR, 0664, $DB_HASH
