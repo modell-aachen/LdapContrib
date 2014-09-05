@@ -26,6 +26,7 @@ use Net::LDAP::Constant qw(LDAP_SUCCESS LDAP_SIZELIMIT_EXCEEDED LDAP_CONTROL_PAG
 use Net::LDAP::Extension::SetPassword;
 use DB_File::Lock;
 use Encode ();
+use JSON;
 
 use Foswiki::Func ();
 use Foswiki::Plugins ();
@@ -201,6 +202,7 @@ sub new {
     mergeGroups => $Foswiki::cfg{Ldap}{MergeGroups} || 0,
 
     mailAttribute => $Foswiki::cfg{Ldap}{MailAttribute} || 'mail',
+    displayAttributes => $Foswiki::cfg{Ldap}{DisplayAttributes} || 'displayName',
 
     exclude => $Foswiki::cfg{Ldap}{Exclude}
       || 'WikiGuest, ProjectContributor, RegistrationAgent, AdminGroup, NobodyGroup',
@@ -279,6 +281,7 @@ sub new {
     unless defined $this->{normalizeGroupName};
 
   @{$this->{wikiNameAttributes}} = split(/\s*,\s*/, $this->{wikiNameAttribute});
+  $this->{displayAttributes} = [ split(/\s*,\s*/, $this->{displayAttributes}) ];
 
   # create exclude map
   my %excludeMap;
@@ -877,6 +880,13 @@ sub refreshCache {
     return 0;
   }
 
+  # check for BDB temp file getting stuck
+  my $bdbTempCacheFile = '__db.'.$tempCacheFile;
+  # SMELL: may want to make this threshold configurable -krueger@modell-aachen.de
+  if (-e $bdbTempCacheFile && (time - [stat($bdbTempCacheFile)]->[10]) > 900 ) {
+    unlink($bdbTempCacheFile);
+  }
+
   my %tempData;
   my $tempCache = tie %tempData, 'DB_File', $tempCacheFile, O_CREAT | O_RDWR, 0664, $DB_HASH
     or die "Cannot open file $tempCacheFile: $!";
@@ -952,7 +962,7 @@ sub refreshUsersCache {
     base => $userBase,
     scope => $this->{userScope},
     deref => "always",
-    attrs => [$this->{loginAttribute}, $this->{mailAttribute}, $this->{primaryGroupAttribute}, @{$this->{wikiNameAttributes}}],
+    attrs => [$this->{loginAttribute}, $this->{mailAttribute}, $this->{primaryGroupAttribute}, @{$this->{wikiNameAttributes}}, @{$this->{displayAttributes}}],
   );
 
   # use the control LDAP extension only if a valid pageSize value has been provided
@@ -1393,6 +1403,15 @@ sub cacheUserFromEntry {
   $data->{"DN2U::$dn"} = $loginName;
   $data->{"U2DN::$loginName"} = $dn;
   $data->{"U2EMAIL::$loginName"} = join(',', @$emails);
+
+  # store extra display fields
+  if ($this->{displayAttributes}) {
+    my $extradata = {};
+    for my $attr (@{$this->{displayAttributes}}) {
+      $extradata->{$attr} = $entry->get_value($attr);
+    }
+    $data->{"U2DIS::$loginName"} = encode_json($extradata);
+  }
 
   if ($emails) {
     foreach my $email (@$emails) {
@@ -2150,6 +2169,25 @@ sub getWikiNameOfDn {
 
   return Foswiki::Sandbox::untaintUnchecked($data->{"U2W::$loginName"});
 }
+
+=pod 
+
+---++ getDisplayAttributesOfLogin($login, $data) -> $displayAttributes
+
+returns the login's display attributes as a hashref
+
+=cut
+
+sub getDisplayAttributesOfLogin {
+  my ($this, $login, $data) = @_;
+
+  return unless $login;
+
+  $data ||= $this->{data};
+
+  return decode_json(Foswiki::Sandbox::untaintUnchecked($data->{"U2DIS::$login"} || "{}"));
+}
+
 
 =pod 
 
