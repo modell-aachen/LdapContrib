@@ -1,7 +1,7 @@
 # ---+ Extensions
 # ---++ LDAP Contrib
 # This is the configuration used by the <b>LdapContrib</b> and the
-# <b>LdapNgPlugin</b>. 
+# <b>LdapNgPlugin</b>.
 # <p>
 # To use an LDAP server for authentication you have to use the PasswordManager
 # <b>LdapPasswdUser</b>.
@@ -19,7 +19,7 @@ $Foswiki::cfg{Ldap}{Host} = 'ldap.my.domain.com';
 $Foswiki::cfg{Ldap}{Port} = 389;
 
 # **NUMBER**
-# Ldap protocol version to use when querying the server; 
+# Ldap protocol version to use when querying the server;
 # Possible values are: 2, 3
 $Foswiki::cfg{Ldap}{Version} = '3';
 
@@ -37,7 +37,7 @@ $Foswiki::cfg{Ldap}{BindDN} = '';
 $Foswiki::cfg{Ldap}{BindPassword} = 'secret';
 
 # **BOOLEAN**
-# Use SASL authentication when binding to the server; Note, when using SASL the 
+# Use SASL authentication when binding to the server; Note, when using SASL the
 # BindDN and BindPassword setting are used to configure the SASL access.
 $Foswiki::cfg{Ldap}{UseSASL} = 0;
 
@@ -80,13 +80,13 @@ $Foswiki::cfg{Ldap}{TLSClientKey} = '';
 # **BOOLEAN**
 # Enable/disable debug output to STDERR. This will end up in your web server's log files.
 # But you are adviced to redirect STDERR of the wiki engine to a separate file. This can be done by
-# commenting out the prepaired command in the <code>lib/Foswiki/UI.pm</code> file. See the 
+# commenting out the prepaired command in the <code>lib/Foswiki/UI.pm</code> file. See the
 # comments there.
 $Foswiki::cfg{Ldap}{Debug} = 0;
 
 # ---+++ User settings
 # The options below configure how the wiki will extract account records from LDAP.
- 
+
 # **STRING**
 # The distinguished name of the users tree. All user accounts will
 # be searched for in the subtree under UserBase.
@@ -123,7 +123,7 @@ $Foswiki::cfg{Ldap}{DisplayAttributes} = 'displayName';
 
 # **STRING**
 # The user's wiki name attribute. This is the attribute to generate
-# the WikiName from. 
+# the WikiName from.
 $Foswiki::cfg{Ldap}{WikiNameAttributes} = 'cn';
 
 # **BOOLEAN**
@@ -144,11 +144,11 @@ $Foswiki::cfg{Ldap}{NormalizeLoginNames} = 0;
 $Foswiki::cfg{Ldap}{WikiNameAliases} = '';
 
 # **PERL**
-# A hash mapping of rewrite rules. Rules are separated by commas. A rule has 
-# the form 
+# A hash mapping of rewrite rules. Rules are separated by commas. A rule has
+# the form
 # <pre>{
-#   'pattern1' => 'substitute1', 
-#   'pattern2' => 'substitute2' 
+#   'pattern1' => 'substitute1',
+#   'pattern2' => 'substitute2'
 # }</pre>
 # consists of a name pattern that has to match the wiki name to be rewritten
 # and a substitute value that is used to replace the matched pattern. The
@@ -176,19 +176,19 @@ $Foswiki::cfg{Ldap}{RewriteLoginNames} = [
 $Foswiki::cfg{Ldap}{AllowChangePassword} = 0;
 
 # **SELECTCLASS none,Foswiki::Users::*User**
-# Define a secondary password manager used to authenticate users that are 
+# Define a secondary password manager used to authenticate users that are
 # registered to the wiki natively. Note, that <b>this must not be Foswiki::Users::LdapPasswdUser again!</b>
 $Foswiki::cfg{Ldap}{SecondaryPasswordManager} = 'none';
 
 # ---+++ Group settings
 # The settings below configures the mapping and processing of LoginNames and WikiNames as
-# well as the use of LDAP groups. 
+# well as the use of LDAP groups.
 # In any case you have to select the LdapUserMapping as the UserMappingManager in the
 # Security Section section above.
 
 # **STRING**
 # The distinguished name of the groups tree. All group definitions
-# are used in the subtree under GroupBase. 
+# are used in the subtree under GroupBase.
 $Foswiki::cfg{Ldap}{GroupBase} = 'ou=group,dc=my,dc=domain,dc=com';
 
 # **STRING**
@@ -201,7 +201,7 @@ $Foswiki::cfg{Ldap}{GroupFilter} = 'objectClass=posixGroup';
 $Foswiki::cfg{Ldap}{GroupScope} = 'sub';
 
 # **STRING**
-# This is the name of the attribute that holds the name of the 
+# This is the name of the attribute that holds the name of the
 # group in a group record.
 $Foswiki::cfg{Ldap}{GroupAttribute} = 'cn';
 
@@ -227,11 +227,11 @@ $Foswiki::cfg{Ldap}{MemberAttribute} = 'memberUid';
 $Foswiki::cfg{Ldap}{InnerGroupAttribute} = 'memberUid';
 
 # **BOOLEAN**
-# Flag indicating wether the MemberAttribute of a group stores a DN. 
+# Flag indicating wether the MemberAttribute of a group stores a DN.
 $Foswiki::cfg{Ldap}{MemberIndirection} = 0;
 
 # **BOOLEAN**
-# Flag indicating wether we fallback to WikiGroups. If this is switched on, 
+# Flag indicating wether we fallback to WikiGroups. If this is switched on,
 # standard Wiki groups will be used as a fallback if a group definition of a given
 # name was not found in the LDAP database.
 $Foswiki::cfg{Ldap}{WikiGroupsBackoff} = 1;
@@ -247,11 +247,11 @@ $Foswiki::cfg{Ldap}{NormalizeGroupNames} = 0;
 $Foswiki::cfg{Ldap}{MapGroups} = 1;
 
 # **PERL**
-# A hash mapping of rewrite rules. Rules are separated by commas. A rule has 
-# the form 
+# A hash mapping of rewrite rules. Rules are separated by commas. A rule has
+# the form
 # <pre>{
-#   'pattern1' => 'substitute1', 
-#   'pattern2' => 'substitute2' 
+#   'pattern1' => 'substitute1',
+#   'pattern2' => 'substitute2'
 # }</pre>
 # consists of a name pattern that has to match the group name to be rewritten
 # and a substitute value that is used to replace the matched pattern. The
@@ -261,8 +261,19 @@ $Foswiki::cfg{Ldap}{MapGroups} = 1;
 $Foswiki::cfg{Ldap}{RewriteGroups} = {
 };
 
+# **PERL**
+# A hash mapping of group ID associations. Rules are separated by commas. A rule has
+# the form
+# <pre>{
+#   'group1' => 'primaryGroupId1',
+#   'group2' => 'primaryGroupId2'
+# }</pre>
+# Example: 'CN=Domain Users,CN=Builtin,DC=example,DC=com' => '513'
+$Foswiki::cfg{Ldap}{PrimaryGroupMapping} = {
+};
+
 # **BOOLEAN**
-# Flag indicating if groups that get the same are merged. For exmaple, given two 
+# Flag indicating if groups that get the same are merged. For exmaple, given two
 # ldap groups end up having the same name even though they have a different distinguished name
 # or have been rewritten to match on the same group name (see RewriteGroups), then members
 # of both groups are merged into one group of that name.
@@ -271,7 +282,7 @@ $Foswiki::cfg{Ldap}{MergeGroups} = 0;
 # ---+++ Performance settings
 # The following settings are used to optimize performance in your environment. Please take care.
 
-# **NUMBER** 
+# **NUMBER**
 # Time in seconds when cache data expires and is reloaded anew, defaults to one day.
 $Foswiki::cfg{Ldap}{MaxCacheAge} = 86400;
 
@@ -284,7 +295,7 @@ $Foswiki::cfg{Ldap}{Precache} = 1;
 # Number of user objects to fetch in one paged result when building the username mappings;
 # this is a speed optimization option, use this value with caution.
 # Requires access to the 'control' LDAP extension as an LDAP client. Use '0' to disable it.
-$Foswiki::cfg{Ldap}{PageSize} = 500; 
+$Foswiki::cfg{Ldap}{PageSize} = 500;
 
 # **STRING 50**
 # Prevent certain names from being looked up in LDAP
