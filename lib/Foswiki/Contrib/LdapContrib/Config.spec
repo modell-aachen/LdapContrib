@@ -94,7 +94,7 @@ $Foswiki::cfg{Ldap}{UserBase} = 'ou=people,dc=my,dc=domain,dc=com';
 
 # **STRING**
 # Filter to be used to find login accounts. Compare to GroupFilter below
-$Foswiki::cfg{Ldap}{LoginFilter} = 'objectClass=posixAccount';
+$Foswiki::cfg{Ldap}{LoginFilter} = 'objectClass=person';
 
 # **SELECT sub,one**
 # The scope of the search for users starting at UserBase. While "sub" search recursively
@@ -104,12 +104,12 @@ $Foswiki::cfg{Ldap}{UserScope} = 'sub';
 # **STRING**
 # The user login name attribute. This is the attribute name that is
 # used to login.
-$Foswiki::cfg{Ldap}{LoginAttribute} = 'uid';
+$Foswiki::cfg{Ldap}{LoginAttribute} = 'sAMAccountName';
 
 # **STRING**
 # The case sensitivity attribute. This is the attribute name used to enable
 # case insensitivity.
-$Foswiki::cfg{Ldap}{CaseSensitivity} = 'on';
+$Foswiki::cfg{Ldap}{CaseSensitivity} = 'off';
 
 # **STRING**
 # The user mail attribute. This is the attribute name used to fetch
@@ -124,7 +124,7 @@ $Foswiki::cfg{Ldap}{DisplayAttributes} = 'displayName';
 # **STRING**
 # The user's wiki name attribute. This is the attribute to generate
 # the WikiName from.
-$Foswiki::cfg{Ldap}{WikiNameAttributes} = 'cn';
+$Foswiki::cfg{Ldap}{WikiNameAttributes} = 'givenName,sn';
 
 # **BOOLEAN**
 # Enable/disable normalization of WikiUserNames as they come from LDAP
@@ -193,7 +193,7 @@ $Foswiki::cfg{Ldap}{GroupBase} = 'ou=group,dc=my,dc=domain,dc=com';
 
 # **STRING**
 # Filter to be used to find groups. Compare to LoginFilter.
-$Foswiki::cfg{Ldap}{GroupFilter} = 'objectClass=posixGroup';
+$Foswiki::cfg{Ldap}{GroupFilter} = 'objectClass=group';
 
 # **SELECT sub,one**
 # The scope of the search for groups starting at GroupBase. While "sub" search recursively
@@ -219,16 +219,16 @@ $Foswiki::cfg{Ldap}{PrimaryGroupAttribute} = 'gidNumber';
 # is the uid of the relevant posixAccount. If groups are implemented using the object class
 # 'groupOfNames' the MemberAttribute will store a literal DN pointing to the account record. In this
 # case you have to switch on the MemberIndirection flag below.
-$Foswiki::cfg{Ldap}{MemberAttribute} = 'memberUid';
+$Foswiki::cfg{Ldap}{MemberAttribute} = 'member';
 
 # **STRING**
 # This is the name of the attribute in a group record used to point to the inner group record.
 # This value is often the same than MemberAttribute but may differ for some LDAP servers.
-$Foswiki::cfg{Ldap}{InnerGroupAttribute} = 'memberUid';
+$Foswiki::cfg{Ldap}{InnerGroupAttribute} = 'member';
 
 # **BOOLEAN**
 # Flag indicating wether the MemberAttribute of a group stores a DN.
-$Foswiki::cfg{Ldap}{MemberIndirection} = 0;
+$Foswiki::cfg{Ldap}{MemberIndirection} = 1;
 
 # **BOOLEAN**
 # Flag indicating wether we fallback to WikiGroups. If this is switched on,
