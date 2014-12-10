@@ -31,8 +31,8 @@ use JSON;
 use Foswiki::Func ();
 use Foswiki::Plugins ();
 
-our $VERSION = '6.00';
-our $RELEASE = '6.00';
+our $VERSION = '6.11';
+our $RELEASE = '6.11';
 our %sharedLdapContrib;
 
 =pod
@@ -179,6 +179,8 @@ sub new {
       || 'cn',
 
     wikiNameAliases => $Foswiki::cfg{Ldap}{WikiNameAliases} || '',
+
+    userMappingTopic => $Foswiki::cfg{Ldap}{UserMappingTopic} || '',
 
     normalizeWikiName => $Foswiki::cfg{Ldap}{NormalizeWikiNames},
     normalizeLoginName => $Foswiki::cfg{Ldap}{NormalizeLoginNames},
@@ -358,6 +360,7 @@ sub connect {
     version => $this->{version},
     inet4 => ($this->{ipv6}?0:1),
     inet6 => ($this->{ipv6}?1:0),
+    timeout => 5, # TODO: make configurable
   );
 
   unless ($this->{ldap}) {
@@ -380,7 +383,7 @@ sub connect {
     $args{"clientkey"} = $this->{tlsClientKey} if $this->{tlsClientKey};
     $args{"sslversion"} = $this->{tlsSSLVersion} if $this->{tlsSSLVersion};
     my $msg = $this->{ldap}->start_tls(%args);
-    writeWarning($msg->{errorMessage}) if exists $msg->{errorMessage};
+    writeWarning($msg->{errorMessage}) if $msg->{errorMessage};
   }
 
   $passwd = $this->fromSiteCharSet($passwd) if $passwd;
@@ -400,13 +403,21 @@ sub connect {
       # sasl bind
       my $sasl = Authen::SASL->new(
         mechanism => $this->{saslMechanism},    #'DIGEST-MD5 PLAIN CRAM-MD5 EXTERNAL ANONYMOUS',
-        callback => {
+      );
+
+      if ($this->{bindDN} && $this->{bindPassword}) {
+        $sasl->callback(
           user => $this->{bindDN},
           pass => $this->{bindPassword},
-        },
-      );
-      #writeDebug("sasl bind to $this->{bindDN}");
-      $msg = $this->{ldap}->bind($this->{bindDN}, sasl => $sasl, version => $this->{version});
+        );
+        #writeDebug("sasl bind to $this->{bindDN}");
+        $msg = $this->{ldap}->bind($this->{bindDN}, sasl => $sasl, version => $this->{version});
+
+      } else {
+        # writeDebug("sasl bind without user or pass");
+        $msg = $this->{ldap}->bind(sasl => $sasl, version => $this->{version});
+      }
+
     } else {
       # simple bind
       #writeDebug("proxy bind");
@@ -463,6 +474,12 @@ sub finish {
 
   $this->disconnect();
   delete $sharedLdapContrib{$this->{session}};
+
+  undef $this->{_topicUserMapping};
+  undef $this->{_wikiNameClaches};
+  undef $this->{_primaryGroup};
+  undef $this->{_groups};
+  undef $this->{_groupId};
 
   $this->untieCache();
 }
@@ -773,7 +790,7 @@ sub tieCache {
   unless (-e $this->{cacheFile}) {
     $locking->{'mode'} = 'write';
     my %db_hash;
-    my $x = tie(%db_hash, 'DB_File::Lock', $this->{cacheFile}, O_CREAT, 0664, $DB_HASH, $locking);
+    my $x = tie(%db_hash, 'DB_File::Lock', $this->{cacheFile}, O_CREAT|O_RDWR, 0664, $DB_HASH, $locking);
     undef($x);
     untie(%db_hash);
     $locking->{'mode'} = $mode;
@@ -816,8 +833,6 @@ sub initCache {
     unless $Foswiki::cfg{UserMappingManager} =~ /LdapUserMapping/
       || $Foswiki::cfg{PasswordManager} =~ /LdapPasswdUser/;
 
-  #writeDebug("called initCache");
-
   # open cache
   #writeDebug("opening ldap cache from $this->{cacheFile}");
   $this->tieCache('read');
@@ -854,6 +869,46 @@ sub initCache {
 
 =pod
 
+---++ initTopicUserMapping()
+
+reads a topic-based user mapping from a predefined topic and initializes the internal _topicUserMapping hash
+
+=cut
+
+sub initTopicUserMapping {
+  my $this = shift;
+
+  return unless $this->{userMappingTopic};
+
+  my ($web, $topic) = Foswiki::Func::normalizeWebTopicName(undef, $this->{userMappingTopic});
+
+  unless (Foswiki::Func::topicExists($web, $topic)) {
+    writeDebug("UserMappingTopic $web.$topic not found");
+    return;
+  }
+
+  writeDebug("reading topic mapping from $web.$topic");
+
+  my ($meta, $text) = Foswiki::Func::readTopic($web, $topic);
+
+  $this->{_topicUserMapping} = ();
+
+  while ($text =~ /^\s*\* (?:$Foswiki::regex{webNameRegex}\.)?($Foswiki::regex{wikiWordRegex})\s*(?:-\s*(\S+)\s*)?-.*$/gm) {
+    my $wikiName = $1;
+    my $loginName = $2 || $wikiName;
+
+    # can't use basemapping obj here as it doesn't exist yet
+    # next if $this->{session}->{users}->{basemapping}->handlesUser(undef, $loginName, $wikiName);
+
+    next if $wikiName =~ /^(ProjectContributor|$Foswiki::cfg{Register}{RegistrationAgentWikiName}|$Foswiki::cfg{AdminUserWikiName}|$Foswiki::cfg{DefaultUserWikiName}|UnknownUser)$/;
+
+    writeDebug("topic mapping $wikiName - $loginName");
+    $this->{_topicUserMapping}{$loginName} = $wikiName;
+  }
+}
+
+=pod
+
 ---++ refreshCache($mode) -> $boolean
 
 download all relevant records from the LDAP server and
@@ -869,8 +924,6 @@ sub refreshCache {
   my ($this, $mode) = @_;
 
   return unless $mode;
-
-  writeDebug("called refreshCache(mode=$mode)");
 
   $this->{_refreshMode} = $mode;
 
@@ -966,6 +1019,9 @@ sub refreshUsersCache {
     attrs => [$this->{loginAttribute}, $this->{mailAttribute}, $this->{primaryGroupAttribute}, @{$this->{wikiNameAttributes}}, @{$this->{displayAttributes}}],
   );
 
+  # init the topic mapping if required
+  $this->initTopicUserMapping();
+
   # use the control LDAP extension only if a valid pageSize value has been provided
   my $page;
   my $cookie;
@@ -1047,6 +1103,14 @@ sub refreshUsersCache {
   $data->{LOGINNAMES} = join(',', keys %loginNames);
 
   writeDebug("got $nrRecords keys in cache");
+
+  if ($this->{_topicUserMapping}) {
+    foreach my $wikiName (sort values %{$this->{_topicUserMapping}}) {
+      next if $wikiNames{$wikiName};
+      #print STDERR "   * %USERSWEB%.$wikiName not found in LDAP\n";
+      writeDebug("$wikiName not found in LDAP ");
+    }
+  }
 
   return 1;
 }
@@ -1278,8 +1342,13 @@ sub cacheUserFromEntry {
   return 0 if $this->{excludeMap}{$loginName};
 
   # construct the wikiName
-  my $isExplicitWikiName = (defined $wikiName) ? 1 : 0;
-  if ($isExplicitWikiName) {
+  if (!defined $wikiName && defined $this->{_topicUserMapping}) {
+    $wikiName = $this->{_topicUserMapping}{$loginName};
+    writeDebug("found wikiName for $loginName in topic mapping: $wikiName ... not reading ldap attributes")
+      if defined $wikiName;
+  }
+
+  if (defined $wikiName) {
     #writeDebug("found explicit wikiName '$wikiName' for $dn");
   } else {
 
