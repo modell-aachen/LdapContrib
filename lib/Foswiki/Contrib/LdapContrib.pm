@@ -79,7 +79,7 @@ keys are used:
    * GROUPS::$groupName - list of all loginNames in group groupName (membership)
    * GROUP2UNCACHEDMEMBERSDN::$groupName - list of all DNs (when in memberIndirection mode) that could not be resolved to a user or group existing in the cache when $groupName was retreived from LDAP
    * EMAIL2U::$emailAddr - stores the loginName of an emailAddr
-   * U2EMAIL::$loginName - stores the emailAddr of a loginName 
+   * U2EMAIL::$loginName - stores the emailAddr of a loginName
    * U2W::$loginName - stores the wikiName of a  loginName
    * W2U::$wikiName - stores the loginName of a wikiName
    * DN2U::$dn - stores the loginName of a distinguishedName
@@ -89,9 +89,9 @@ keys are used:
 
 =pod
 
----++ writeDebug($msg) 
+---++ writeDebug($msg)
 
-Static Method to write a debug messages. 
+Static Method to write a debug messages.
 
 =cut
 
@@ -101,9 +101,9 @@ sub writeDebug {
 
 =pod
 
----++ writeWarning($msg) 
+---++ writeWarning($msg)
 
-Static Method to write a warning messages. 
+Static Method to write a warning messages.
 
 =cut
 
@@ -118,15 +118,15 @@ sub writeWarning {
 Construct a new Foswiki::Contrib::LdapContrib object
 
 Possible options are:
-   * host: ip address (or hostname) 
+   * host: ip address (or hostname)
    * base: the base DN to use in searches
    * port: port address used when binding to the LDAP server
-   * version: protocol version 
+   * version: protocol version
    * userBase: list of sub-trees containing user accounts
    * groupBase: list of sub-trees containing group definitions
    * loginAttribute: user login name attribute
    * loginFilter: filter to be used to find login accounts
-   * groupAttribute: the group name attribute 
+   * groupAttribute: the group name attribute
    * groupFilter: filter to be used to find groups
    * memberAttribute: the attribute that should be used to collect group members
    * innerGroupAttribute: the attribute that should be used to collect inner groups of a group
@@ -171,6 +171,7 @@ sub new {
       || 'sub',
 
     loginAttribute => $Foswiki::cfg{Ldap}{LoginAttribute} || 'uid',
+    caseSensitivity=>$Foswiki::cfg{Ldap}{CaseSensitivity} || '',
     allowChangePassword => $Foswiki::cfg{Ldap}{AllowChangePassword} || 0,
 
     wikiNameAttribute => $Foswiki::cfg{Ldap}{WikiNameAttributes}
@@ -314,7 +315,7 @@ sub new {
 ---++ getLdapContrib($session) -> $ldap
 
 Returns a standard singleton Foswiki::Contrib::LdapContrib object based on the site-wide
-configuration. 
+configuration.
 
 =cut
 
@@ -522,7 +523,7 @@ sub getCode {
 
 Fetches an account entry from the database and returns a Net::LDAP::Entry
 object on success and undef otherwise. Note, the login name is match against
-the attribute defined in $ldap->{loginAttribute}. Account records are 
+the attribute defined in $ldap->{loginAttribute}. Account records are
 search using $ldap->{loginFilter} in one of the the subtrees defined in
 $ldap->{userBase}.
 
@@ -699,10 +700,10 @@ sub _followLink {
 Takes an Net::LDAP::Entry and an $attribute name, and stores its value into a
 file. Returns the pubUrlPath to it. This can be used to store binary large
 objects like images (jpegPhotos) into the filesystem accessible to the httpd
-which can serve it in return to the client browser. 
+which can serve it in return to the client browser.
 
 Filenames containing the blobs are named using a hash value that is generated
-using its DN and the actual attribute name whose value is extracted from the 
+using its DN and the actual attribute name whose value is extracted from the
 database. If the blob already exists in the cache it is _not_ extracted once
 again except the $refresh parameter is defined.
 
@@ -1240,7 +1241,7 @@ sub refreshGroupsCache {
 
 ---++ cacheUserFromEntry($entry, $data, $wikiNames, $loginNames, $wikiName) -> $boolean
 
-store a user LDAP::Entry to our internal cache 
+store a user LDAP::Entry to our internal cache
 
 If the $wikiName parameter is given explicitly then this will be the name under which this record
 will be cached.
@@ -1454,7 +1455,7 @@ sub cacheUserFromEntry {
 
 ---++ cacheGroupFromEntry($entry, $data, $groupNames) -> $boolean
 
-store a group LDAP::Entry to our internal cache 
+store a group LDAP::Entry to our internal cache
 
 returns true if new records have been created
 
@@ -1540,6 +1541,55 @@ sub cacheGroupFromEntry {
   # fetch all members of this group
   my $memberVals = $entry->get_value($this->{memberAttribute}, alloptions => 1);
   my @members = (defined($memberVals) && exists($memberVals->{''})) ? @{$memberVals->{''}} : ();
+
+  # resolve primary group memberships.
+  my $objId = $this->{primaryGroupMapping}->{$dn};
+  if ( $objId ) {
+    require Net::LDAP::Control::Paged;
+    my $page = Net::LDAP::Control::Paged->new(size => 100);
+
+    # read pages
+    my $cookie;
+    my $nrRecords = 0;
+    my %groupNames;
+    my $gotError = 0;
+    while (1) {
+      # perform search
+      my $results = $this->search(
+        filter => "(&(objectClass=user)(primaryGroupID=$objId))",
+        base => $this->{userBase},
+        scope => 'sub',
+        control => [$page]
+      );
+
+      last unless ( $results );
+
+      while ( my $result = $results->pop_entry() ) {
+        my $rdn = $result->dn();
+        my $contains = grep { $members[$_] ~~ $rdn; } 0 .. $#members;
+        if ( !$contains ) {
+          push( @members, $rdn );
+        }
+      }
+
+      # only use cookies and pages if we are using this extension
+      if ($page) {
+        # get cookie from paged control to remember the offset
+        my ($resp) = $results->control(LDAP_CONTROL_PAGED) or last;
+        $cookie = $resp->cookie or last;
+        if ($cookie) {
+          # set cookie in paged control
+          $page->cookie($cookie);
+        } else {
+          # found all
+          last;
+        }
+      } else {
+        last;
+      }
+    }
+  }
+
   my $addMember = sub {
     my $member;
     while ($member = shift) {
@@ -1598,7 +1648,7 @@ sub cacheGroupFromEntry {
   return 1;
 }
 
-=pod 
+=pod
 
 ---++ normalizeWikiName($name) -> $string
 
@@ -1630,7 +1680,7 @@ sub normalizeWikiName {
   return $wikiName;
 }
 
-=pod 
+=pod
 
 ---++ normalizeLoginName($name) -> $string
 
@@ -1676,7 +1726,7 @@ sub rewriteLoginName {
       $subst =~ s/\$3/$arg3/g;
       $subst =~ s/\$4/$arg4/g;
       $subst =~ s/\$5/$arg5/g;
-      writeDebug("rewriting '$name' to '$subst' using rule $pattern"); 
+      writeDebug("rewriting '$name' to '$subst' using rule $pattern");
       return $subst;
     }
   }
@@ -2025,7 +2075,7 @@ sub isGroupMember {
   return ($members =~ /\b$loginName\b/) ? 1 : 0;
 }
 
-=pod 
+=pod
 
 ---++ getWikiNameOfLogin($loginName, $data) -> $wikiName
 
@@ -2049,7 +2099,7 @@ sub getWikiNameOfLogin {
   return Foswiki::Sandbox::untaintUnchecked($data->{"U2W::$loginName"});
 }
 
-=pod 
+=pod
 
 ---++ getLoginOfWikiName($wikiName, $data) -> $loginName
 
@@ -2073,7 +2123,7 @@ sub getLoginOfWikiName {
   return $loginName;
 }
 
-=pod 
+=pod
 
 ---++ getAllWikiNames($data) -> \@array
 
@@ -2091,7 +2141,7 @@ sub getAllWikiNames {
   return \@wikiNames;
 }
 
-=pod 
+=pod
 
 ---++ getAllLoginNames($data) -> \@array
 
@@ -2109,7 +2159,7 @@ sub getAllLoginNames {
   return \@loginNames;
 }
 
-=pod 
+=pod
 
 ---++ getDnOfLogin($loginName, $data) -> $dn
 
@@ -2120,15 +2170,13 @@ returns the Distinguished Name of the LDAP record of the given name
 sub getDnOfLogin {
   my ($this, $loginName, $data) = @_;
 
-  return unless $loginName;
-
   $loginName = $this->locale_lc($loginName) unless $this->{caseSensitiveLogin};
   $data ||= $this->{data};
 
   return Foswiki::Sandbox::untaintUnchecked($data->{"U2DN::$loginName"});
 }
 
-=pod 
+=pod
 
 ---++ getDnOfWikiName($wikiName, $data) -> $dn
 
@@ -2189,7 +2237,7 @@ sub getDisplayAttributesOfLogin {
 }
 
 
-=pod 
+=pod
 
 ---++ changePassword($loginName, $newPassword, $oldPassword) -> $boolean
 
@@ -2229,7 +2277,7 @@ grant that the current loginName is cached. If not, it will download the LDAP
 record for this specific user and update the LDAP cache with this single record.
 
 This happens when the user is authenticated externally, e.g. using apache's
-mod_authz_ldap or some other SSO, and the internal cache 
+mod_authz_ldap or some other SSO, and the internal cache
 is not yet updated. It is completely updated regularly on a specific time
 interval (default every 24h). See the LdapContrib settings.
 
@@ -2368,7 +2416,7 @@ sub removeUserFromCache {
 
 =begin text
 
----++ renameWikiName($loginName, $oldWikiName, $newWikiName) 
+---++ renameWikiName($loginName, $oldWikiName, $newWikiName)
 
 assigns the new !WikiName to the given login
 
@@ -2410,7 +2458,7 @@ sub addIgnoredUser {
     unless $this->isUnknownUser($loginName, $data);
 }
 
-=pod 
+=pod
 
 ---++++ isUnknownUser($loginName, $data) -> $boolean
 
@@ -2427,7 +2475,7 @@ sub isUnknownUser {
   return $names =~ /\b$loginName\b/;
 }
 
-=pod 
+=pod
 
 ---++ addIgnoredGroup($groupName, $data) -> \@array
 
@@ -2592,7 +2640,7 @@ sub checkCacheForGroupName {
 
 Fetches a group entry from the database and returns a Net::LDAP::Entry
 object on success and undef otherwise. Note, the group name is match against
-the attribute defined in $ldap->{groupAttribute}. Account records are 
+the attribute defined in $ldap->{groupAttribute}. Account records are
 search using $ldap->{groupFilter} in the subtree defined by $ldap->{groupBase}.
 
 =cut
