@@ -1434,7 +1434,7 @@ sub cacheUserFromEntry {
       }
 
       # 6. check for name clashes within this transaction
-      my $clashLogin = $this->getDnOfWikiName($wikiName, $data);
+      my $clashLogin = $this->getLoginOfWikiName($wikiName, $data);
       if (defined $clashLogin) {
         if ($loginName ne $clashLogin) {
           writeWarning("$loginName clashes with $clashLogin on wikiName $wikiName at $dn ... renaming later");
