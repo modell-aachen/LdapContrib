@@ -1338,6 +1338,7 @@ sub cacheUserFromEntry {
 
   # 2. normalize
   $loginName = $this->locale_lc($loginName) unless $this->{caseSensitiveLogin};
+  $loginName = $this->rewriteLoginName($loginName);
   $loginName = $this->normalizeLoginName($loginName) if $this->{normalizeLoginName};
   return 0 if $this->{excludeMap}{$loginName};
 
