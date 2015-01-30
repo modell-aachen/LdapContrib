@@ -559,12 +559,15 @@ sub login2cUID {
   $name = $this->{ldap}->locale_lc($name) unless $this->{ldap}{caseSensitiveLogin};
   my $cUID = $this->{mapping_id} . Foswiki::Users::mapLogin2cUID($name);
 
+  my $valid = $loginName || $this->{ldap}->getWikiNameOfLogin($name);
+  return $cUID if $valid;
+
   # don't ask topic user mapping for large wikis
-  if ($this->{ldap}{secondaryPasswordManager} && (! defined($cUID) || $cUID eq $origName)) {
-    $cUID = $this->SUPER::login2cUID($origName, $dontcheck);
+  if ($this->{ldap}{secondaryPasswordManager}) {
+    return $this->SUPER::login2cUID($origName, $dontcheck);
   }
 
-  return $cUID;
+  return $cUID if $dontcheck;
 }
 
 =pod
