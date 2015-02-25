@@ -1400,7 +1400,7 @@ sub cacheGroupFromEntry {
 
       while ( my $result = $results->pop_entry() ) {
         my $rdn = $result->dn();
-        my $contains = grep { $members[$_] ~~ $rdn; } 0 .. $#members;
+        my $contains = grep { $members[$_] eq $rdn; } 0 .. $#members;
         if ( !$contains ) {
           push( @members, $rdn );
         }
