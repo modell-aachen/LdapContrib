@@ -1814,6 +1814,7 @@ sub getEmails {
 
   $this->checkCacheForLoginName($login, $data) unless $this->{preCache};
 
+  $login = $this->locale_lc($login) if ( $this->{caseSensitivity} eq 'off' );
   my $emails = Foswiki::Sandbox::untaintUnchecked($data->{ "U2EMAIL::" . $login }) || '';
   my @emails = split(/\s*,\s*/, $emails);
   return \@emails;
