@@ -2048,6 +2048,7 @@ sub getDisplayAttributesOfLogin {
 
   return unless $login;
 
+  $login = $this->locale_lc($login) if ( $this->{caseSensitivity} eq 'off' );
   $data ||= $this->{data};
 
   return decode_json(Foswiki::Sandbox::untaintUnchecked($data->{"U2DIS::$login"} || "{}"));
