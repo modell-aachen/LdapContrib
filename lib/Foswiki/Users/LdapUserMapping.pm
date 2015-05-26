@@ -52,6 +52,7 @@ sub new {
   my $this = bless($class->SUPER::new( $session ), $class);
   $this->{ldap} = &Foswiki::Contrib::LdapContrib::getLdapContrib($session);
   $this->{eachGroupMember} = {};
+  $this->{login2cUIDCache} = {};
 
   return $this;
 }
