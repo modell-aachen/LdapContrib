@@ -32,6 +32,9 @@ use vars qw($VERSION $RELEASE %sharedLdapContrib);
 $VERSION = '4.33';
 $RELEASE = "4.33";
 
+our $magic = {};
+our $isGroupCache = {};
+
 =pod
 
 ---+ Foswiki::Contrib::LdapContrib
@@ -141,7 +144,6 @@ sub new {
   $Foswiki::Plugins::SESSION = $session;
 
   my $this = {
-    isGroupCache => {},
     ldap=>undef,# connect later
     error=>undef,
     host=>$Foswiki::cfg{Ldap}{Host} || 'localhost',
@@ -682,11 +684,23 @@ sub initCache {
       $refresh = 1 if $cacheAge > $this->{maxCacheAge}
     }
 
+    unless ($magic->{$this->{cacheFile}} && $magic->{$this->{cacheFile}} == $lastUpdate) {
+        $magic->{$this->{cacheFile}} = $lastUpdate;
+        $isGroupCache->{$this->{cacheFile}} = {};
+        $this->{keepCache} = 0;
+    } else {
+        $this->{keepCache} = 1;
+    }
+
     writeDebug("cacheAge=$cacheAge, maxCacheAge=$this->{maxCacheAge}, lastUpdate=$lastUpdate, refresh=$refresh");
   }
 
   # clear to reload it
   $this->refreshCache($refresh);
+}
+
+sub keepCache {
+    return $_[0]->{keepCache};
 }
 
 =pod
@@ -1783,12 +1797,12 @@ check if a given user is an ldap group actually
 sub isGroup {
   my ($this, $wikiName, $data) = @_;
 
-  if(exists $this->{isGroupCache}{$wikiName}) {
-      return $this->{isGroupCache}{$wikiName};
+  if(exists $isGroupCache->{$this->{cacheFile}}->{$wikiName}) {
+      return $isGroupCache->{$this->{cacheFile}}->{$wikiName};
   }
 
   my $cached = _isGroup($this, $wikiName, $data);
-  $this->{isGroupCache}{$wikiName} = $cached;
+  $isGroupCache->{$this->{cacheFile}}->{$wikiName} = $cached;
   return $cached;
 }
 
