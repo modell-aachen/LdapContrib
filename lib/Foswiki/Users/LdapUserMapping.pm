@@ -52,6 +52,7 @@ sub new {
   my $this = bless($class->SUPER::new( $session ), $class);
   $this->{ldap} = &Foswiki::Contrib::LdapContrib::getLdapContrib($session);
   $this->{eachGroupMember} = {};
+  $this->{login2cUIDCache} = {};
 
   return $this;
 }
@@ -534,6 +535,8 @@ This is used for registration)
 sub login2cUID {
   my ($this, $name, $dontcheck) = @_;
 
+  return $this->{login2cUIDCache}{$name} if defined $this->{login2cUIDCache}{$name};
+
   #writeDebug("called login2cUID($name)");
 
   my $loginName = $this->{ldap}->getLoginOfWikiName($name);
@@ -544,6 +547,7 @@ sub login2cUID {
   unless ($dontcheck) {
     my $wikiName = $this->{ldap}->getWikiNameOfLogin($name);
     return undef unless $wikiName || $loginName;
+    $this->{login2cUIDCache}{$name} = $cUID;
   }
 
   return $cUID;
