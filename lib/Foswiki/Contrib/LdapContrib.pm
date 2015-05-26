@@ -220,6 +220,10 @@ sub new {
     secondaryPasswordManager=>$Foswiki::cfg{Ldap}{SecondaryPasswordManager} || '',
     @_
   };
+  unless ($] < 5.008) {
+    $this->{encoding} = Encode::resolve_alias($Foswiki::cfg{Site}{CharSet});
+  }
+
   bless($this, $class);
 
   $this->{session} = $session;
@@ -2498,7 +2502,7 @@ sub fromUtf8 {
     # good Perl version, just use Encode
     require Encode;
     import Encode;
-    my $encoding = Encode::resolve_alias($charset);
+    my $encoding = $this->{encoding};
     if (not $encoding) {
       $this->writeWarning('Conversion to "' . $charset . '" not supported, or name not recognised - check ' . '"perldoc Encode::Supported"');
       return $utf8string;
@@ -2543,7 +2547,7 @@ sub toUtf8 {
     # good Perl version, just use Encode
     require Encode;
     import Encode;
-    my $encoding = Encode::resolve_alias($charset);
+    my $encoding = $this->{encoding};
     if (not $encoding) {
       $this->writeWarning('Conversion to "' . $charset . '" not supported, or name not recognised - check ' . '"perldoc Encode::Supported"');
       return undef;
@@ -2556,9 +2560,8 @@ sub toUtf8 {
 
 sub locale_lc {
   my ($this, $string) = @_;
-  my $charset = $Foswiki::cfg{Site}{CharSet};
   require Encode;
-  my $encoding = Encode::resolve_alias($charset);
+  my $encoding = $this->{encoding};
   return $string unless $encoding;
   my $already_unicode = Encode::is_utf8($string);
   $string = Encode::decode($encoding, $string) unless $already_unicode;
