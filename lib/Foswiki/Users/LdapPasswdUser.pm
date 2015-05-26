@@ -126,17 +126,6 @@ sub fetchPass {
 
   my $passwd = $this->{passwords}{$login};
 
-  unless (defined $passwd) {
-    my $entry = $this->{ldap}->getAccount($login); # expensive
-
-    $passwd = $entry->get_value('userPassword') if $entry;
-    $passwd = $this->{secondaryPasswordManager}->fetchPass($login)
-      if !defined($passwd) && $this->{secondaryPasswordManager};
-
-    $passwd = 0 unless defined $passwd;
-    $this->{passwords}{$login} = $passwd;
-  }
-
   return $passwd;
 }
 
