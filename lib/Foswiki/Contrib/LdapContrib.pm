@@ -141,6 +141,7 @@ sub new {
   $Foswiki::Plugins::SESSION = $session;
 
   my $this = {
+    isGroupCache => {},
     ldap=>undef,# connect later
     error=>undef,
     host=>$Foswiki::cfg{Ldap}{Host} || 'localhost',
@@ -1781,6 +1782,19 @@ check if a given user is an ldap group actually
 
 sub isGroup {
   my ($this, $wikiName, $data) = @_;
+
+  if(exists $this->{isGroupCache}{$wikiName}) {
+      return $this->{isGroupCache}{$wikiName};
+  }
+
+  my $cached = _isGroup($this, $wikiName, $data);
+  $this->{isGroupCache}{$wikiName} = $cached;
+  return $cached;
+}
+
+sub _isGroup {
+  my ($this, $wikiName, $data) = @_;
+
 
   #writeDebug("called isGroup($wikiName)");
   $data ||= $this->{data};
