@@ -535,16 +535,23 @@ This is used for registration)
 sub login2cUID {
   my ($this, $name, $dontcheck) = @_;
 
+  my $cached = $this->{ldap}->getLogin2cUID($name);
+  return $cached if defined $cached;
+
   #writeDebug("called login2cUID($name)");
 
   my $loginName = $this->{ldap}->getLoginOfWikiName($name);
-  $name = $loginName if defined $loginName; # called with a wikiname
+  if(defined $loginName) {
+        $name = $loginName; # called with a wikiname
+        return $this->{login2cUIDCache}{$name} if defined $this->{login2cUIDCache}{$name};
+  }
 
   my $cUID = $this->{mapping_id}.Foswiki::Users::mapLogin2cUID($name);
 
   unless ($dontcheck) {
     my $wikiName = $this->{ldap}->getWikiNameOfLogin($name);
     return undef unless $wikiName || $loginName;
+    $this->{ldap}->putLogin2cUID($name, $cUID);
   }
 
   return $cUID;
