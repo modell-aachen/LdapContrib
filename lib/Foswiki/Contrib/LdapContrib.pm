@@ -34,6 +34,9 @@ $RELEASE = "4.33";
 
 our $magic = {};
 our $isGroupCache = {};
+our $connectionCache = {};
+our $dataCache = {};
+our $connectionTime = {};
 
 =pod
 
@@ -438,7 +441,7 @@ sub finish {
   delete $sharedLdapContrib{$this->{session}};
 
   undef $this->{cacheDB};
-  untie %{$this->{data}};
+  #untie %{$this->{data}};
 }
 
 
@@ -659,11 +662,21 @@ sub initCache {
 
   #writeDebug("called initCache");
 
-  # open cache
-  #writeDebug("opening ldap cache from $this->{cacheFile}");
-  $this->{cacheDB} =
-    tie %{$this->{data}}, 'DB_File', $this->{cacheFile}, O_CREAT|O_RDWR, 0664, $DB_HASH
-    or die "Cannot open file $this->{cacheFile}: $!";
+  my @stat = stat($this->{cacheFile});
+  if($stat[0] && $connectionTime->{$this->{cacheFile}} && $connectionTime->{$this->{cacheFile}} == $stat[9]) {
+    $this->{cacheDB} = $connectionCache->{$this->{cacheFile}};
+    $this->{data} = $dataCache->{$this->{cacheFile}};
+  } else {
+    # open cache
+    #writeDebug("opening ldap cache from $this->{cacheFile}");
+    untie $this->{data};
+    $this->{cacheDB} =
+      tie %{$this->{data}}, 'DB_File', $this->{cacheFile}, O_CREAT|O_RDWR, 0664, $DB_HASH
+      or die "Cannot open file $this->{cacheFile}: $!";
+    $connectionCache->{$this->{cacheFile}} = $this->{cacheDB};
+    $dataCache->{$this->{cacheFile}} = $this->{data};
+    $connectionTime->{$this->{cacheFile}} = $stat[9];
+  }
 
   # refresh by user interaction
   my $refresh = '';
@@ -783,6 +796,11 @@ sub refreshCache {
   $this->{cacheDB} =
     tie %{$this->{data}}, 'DB_File', $this->{cacheFile}, O_CREAT|O_RDWR, 0664, $DB_HASH
     or die "Cannot open file $this->{cacheFile}: $!";
+
+  my @stat = stat($this->{cacheFile});
+  $connectionCache->{$this->{cacheFile}} = $this->{cacheDB};
+  $dataCache->{$this->{cacheFile}} = $this->{data};
+  $connectionTime->{$this->{cacheFile}} = $stat[9];
 
   undef $this->{_refreshMode};
 
