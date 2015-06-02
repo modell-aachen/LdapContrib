@@ -217,6 +217,7 @@ sub new {
 
     useSASL => $Foswiki::cfg{Ldap}{UseSASL} || 0,
     saslMechanism => $Foswiki::cfg{Ldap}{SASLMechanism} || 'PLAIN CRAM-MD4 EXTERNAL ANONYMOUS',
+    krb5CredCache => $Foswiki::cfg{Ldap}{Krb5CredentialsCacheFile},
 
     useTLS => $Foswiki::cfg{Ldap}{UseTLS} || 0,
     tlsVerify => $Foswiki::cfg{Ldap}{TLSVerify} || 'require',
@@ -394,16 +395,20 @@ sub connect {
     die "illegal call to connect()" unless defined($passwd);
     $msg = $this->{ldap}->bind($dn, password => $passwd);
     #writeDebug("bind for $dn");
-  }
-
-  # proxy user
-  elsif ($this->{bindDN} && $this->{bindPassword}) {
-
+  } else {
+    # proxy user
     if ($this->{useSASL}) {
       # sasl bind
       my $sasl = Authen::SASL->new(
         mechanism => $this->{saslMechanism},    #'DIGEST-MD5 PLAIN CRAM-MD5 EXTERNAL ANONYMOUS',
       );
+
+      my $krb5keytab = $ENV{KRB5CCNAME};
+      if (my $newkeytab = $this->{krb5CredCache}) {
+        $krb5keytab = "FILE:$newkeytab";
+      }
+      local $ENV{KRB5CCNAME};
+      $ENV{KRB5CCNAME} = $krb5keytab if $this->{krb5CredCache};
 
       if ($this->{bindDN} && $this->{bindPassword}) {
         $sasl->callback(
@@ -418,17 +423,14 @@ sub connect {
         $msg = $this->{ldap}->bind(sasl => $sasl, version => $this->{version});
       }
 
-    } else {
+    } elsif ($this->{bindDN} && $this->{bindPassword}) {
       # simple bind
       #writeDebug("proxy bind");
       $msg = $this->{ldap}->bind($this->{bindDN}, password => $this->{bindPassword});
+    } else {
+      # anonymous bind
+      $msg = $this->{ldap}->bind;
     }
-  }
-
-  # anonymous bind
-  else {
-    #writeDebug("anonymous bind");
-    $msg = $this->{ldap}->bind;
   }
 
   $this->{isConnected} = ($this->checkError($msg) == LDAP_SUCCESS) ? 1 : 0;
@@ -689,6 +691,14 @@ sub _followLink {
   my $uri = URI::ldap->new($link);
 
   # SMELL: cache multiple ldap connections
+
+  my $refcfg;
+  $refcfg = $Foswiki::cfg{Ldap}{ReferralConfig};
+  $refcfg = $refcfg->{$link} if $refcfg;
+  $refcfg = {} unless defined $refcfg;
+  my @keys = keys %$refcfg;
+  my @vals = values %$refcfg;
+  local @{$this}{@keys} = @vals;
 
   # remember old connection
   my $oldLdap = $this->{ldap};

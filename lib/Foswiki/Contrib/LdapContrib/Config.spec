@@ -63,6 +63,23 @@ $Foswiki::cfg{Ldap}{UseSASL} = 0;
 # EXTERNAL ANONYMOUS'
 $Foswiki::cfg{Ldap}{SASLMechanism} = 'PLAIN CRAM-MD5 EXTERNAL ANONYMOUS';
 
+# **STRING**
+# If the GSSAPI mechanism is used in {Ldap}{SASLMechanism}, and the underlying
+# implementation is MIT Kerberos 5, this setting can be used to override the
+# ticket cache file to be used.
+$Foswiki::cfg{Ldap}{Krb5CredentialsCacheFile} = '';
+
+# **PERL**
+# Add a key for each LDAP referral link to supply a hashref with configuration
+# overrides for the referral target. This can be used to override auth
+# mechanisms and credentials. Please note that for technical reasons the keys
+# in the hashref have to match the internal keys of the LdapContrib object
+# rather than the keys in this configuration.
+# The following is a list of relevant keys: host, base, port, ipv6, bindDN,
+# bindPassword, useSASL, saslMechanism, krb5CredCache, useTLS, tlsVerify,
+# tlsSSLVersion, tlsCAFile, tlsCAPath, tlsClientCert, tlsClientKey
+$Foswiki::cfg{Ldap}{ReferralConfig} = {};
+
 # **BOOLEAN**
 # Use Transort Layer Security (TLS) to encrypt the connection to the LDAP server.
 # You will need to specify the servers CA File using the TLSCAFile option
