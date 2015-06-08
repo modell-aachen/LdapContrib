@@ -52,6 +52,7 @@ sub new {
         {
             mapping_id => $mid || '',
             session => $session,
+            isInGroupCache => {},
         },
         $class
     );
@@ -403,6 +404,8 @@ sub isInGroup {
     my ( $this, $cUID, $group, $options ) = @_;
     ASSERT($cUID) if DEBUG;
 
+    return $this->{isInGroupCache}{$cUID}{$group} if defined $this->{isInGroupCache}{$cUID}{$group};
+
     my $expand = $options->{expand};
     $expand = 1 unless ( defined $expand );
 
@@ -422,11 +425,18 @@ sub isInGroup {
         next if $scanning{$u};
         $scanning{$u} = 1;
 
-        return 1 if $u eq $cUID;
+        if ($u eq $cUID) {
+            $this->{isInGroupCache}{$cUID}{$group} = 1;
+            return 1;
+        }
         if ( $expand && $this->isGroup($u) ) {
-            return 1 if $this->isInGroup( $cUID, $u );
+            if ($this->isInGroup( $cUID, $u )) {
+                $this->{isInGroupCache}{$cUID}{$group} = 1;
+                return 1;
+            }
         }
     }
+    $this->{isInGroupCache}{$cUID}{$group} = 0;
     return 0;
 }
 
