@@ -27,6 +27,9 @@ our @ISA = qw( Foswiki::Users::TopicUserMapping );
 
 use vars qw($isLoadedMapping);
 
+# For recursively checking group memberships but not recursing forever
+my %scanning;
+
 =pod
 
 ---+ Foswiki::Users::LdapUserMapping
@@ -53,6 +56,7 @@ sub new {
   my $this = bless($class->SUPER::new($session), $class);
   $this->{ldap} = &Foswiki::Contrib::LdapContrib::getLdapContrib($session);
   $this->{eachGroupMember} = {};
+  $this->{isInGroupCache} = {};
 
   return $this;
 }
@@ -72,6 +76,7 @@ sub finish {
   $this->{ldap}->finish() if $this->{ldap};
   undef $this->{ldap};
   undef $this->{eachGroupMember};
+  undef $this->{isInGroupCache};
   $this->SUPER::finish();
 }
 
@@ -604,15 +609,29 @@ sub groupAllowsChange {
 sub isInGroup {
   my ( $this, $cUID, $group, $options ) = @_;
 
-  # deligate non-ldap groups
-  return $this->SUPER::isInGroup($cUID, $group, $options) unless $this->{ldap}->isGroup($group);
+  my $cache = sub {
+      my ($cUID, $group, $val) = @_;
+      $this->{isInGroupCache}{$cUID}{$group} = $val;
+      if ($this->{ldap}->isGroup($group)) {
+          $this->{ldap}->putIsInGroup($cUID, $group, $val);
+      }
+      $val;
+  };
 
-  my $isInGroup = $this->{ldap}->getIsInGroup($cUID, $group);
-  unless ( defined $isInGroup ) {
-      $isInGroup = $this->SUPER::isInGroup($cUID, $group, $options);
-      $this->{ldap}->putIsInGroup($cUID, $group, $isInGroup);
-  }
-  return $isInGroup;
+  local $scanning{$group} = 1;
+  my $it = $this->SUPER::eachGroupMember( $group, { expand => 0 } );
+  while ( $it->hasNext() ) {
+      my $u = $it->next();
+      next if $scanning{$u};
+
+       if ($u eq $cUID) {
+           return $cache->($cUID, $group, 1);
+       }
+       if ( $expand && $this->isGroup($u) && $this->isInGroup( $cUID, $u )) {
+           return $cache->($cUID, $group, 1);
+       }
+   }
+   return $cache->($cUID, $group, 0);
 }
 
 1;
