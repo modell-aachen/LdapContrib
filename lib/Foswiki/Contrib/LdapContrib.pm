@@ -670,6 +670,8 @@ sub initCache {
     # open cache
     #writeDebug("opening ldap cache from $this->{cacheFile}");
     untie $this->{data};
+    undef $connectionCache->{$this->{cacheFile}};
+    undef $dataCache->{$this->{cacheFile}};
     $this->{cacheDB} =
       tie %{$this->{data}}, 'DB_File', $this->{cacheFile}, O_CREAT|O_RDWR, 0664, $DB_HASH
       or die "Cannot open file $this->{cacheFile}: $!";
@@ -787,6 +789,8 @@ sub refreshCache {
 
   # try to be transactional
   undef $this->{cacheDB};
+  undef $connectionCache->{$this->{cacheFile}};
+  undef $dataCache->{$this->{cacheFile}};
   untie %{$this->{data}};
 
   #writeDebug("replacing working copy");
