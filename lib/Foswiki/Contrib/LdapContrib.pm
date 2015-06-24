@@ -34,6 +34,7 @@ $RELEASE = "4.33";
 
 our $magic = {};
 our $isGroupCache = {};
+our $isInGroupCache = {};
 our $connectionCache = {};
 our $dataCache = {};
 our $connectionTime = {};
@@ -706,6 +707,7 @@ sub initCache {
     unless ($magic->{$this->{cacheFile}} && $magic->{$this->{cacheFile}} == $lastUpdate) {
         $magic->{$this->{cacheFile}} = $lastUpdate;
         $isGroupCache->{$this->{cacheFile}} = {};
+        $isInGroupCache->{$this->{cacheFile}} = {};
         $this->{keepCache} = 0;
     } else {
         $this->{keepCache} = 1;
@@ -1830,6 +1832,20 @@ sub isGroup {
   my $cached = _isGroup($this, $wikiName, $data);
   $isGroupCache->{$this->{cacheFile}}->{$wikiName} = $cached;
   return $cached;
+}
+
+sub getIsInGroup {
+    my ( $this, $cUID, $group ) = @_;
+
+    my %cache = $isInGroupCache->{$this->{cacheFile}};
+    return $cache{$group}{$cUID};
+}
+
+sub putIsInGroup {
+    my ( $this, $cUID, $group, $value ) = @_;
+
+    my %cache = $isInGroupCache->{$this->{cacheFile}};
+    $cache{$group}{$cUID} = $value;
 }
 
 sub _isGroup {
