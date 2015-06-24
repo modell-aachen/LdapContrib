@@ -573,6 +573,18 @@ sub groupAllowsChange {
   return 0;
 }
 
+sub isInGroup {
+    my ( $this, $cUID, $group, $options ) = @_;
 
+     # deligate non-ldap groups
+     return $this->SUPER::isInGroup($cUID, $group, $options) unless $this->{ldap}->isGroup($group);
+
+     my $isInGroup = $this->{ldap}->getIsInGroup($cUID, $group);
+     unless ( defined $isInGroup ) {
+         $isInGroup = $this->SUPER::isInGroup($cUID, $group, $options);
+         $this->{ldap}->putIsInGroup($cUID, $group, $isInGroup);
+     }
+     return $isInGroup;
+}
 
 1;

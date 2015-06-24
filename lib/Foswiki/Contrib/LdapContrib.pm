@@ -39,6 +39,7 @@ $RELEASE = "4.33";
 # There can be multiple files for VirtualHostingContrib.
 our $cachedUpdate = {}; # timestamp of cached entries
 our $isGroupCache = {};
+our $isInGroupCache = {};
 our $connectionCache = {};
 our $dataCache = {};
 our $connectionTime = {};
@@ -710,6 +711,7 @@ sub initCache {
     unless ($cachedUpdate->{$this->{cacheFile}} && $cachedUpdate->{$this->{cacheFile}} == $lastUpdate) {
         $cachedUpdate->{$this->{cacheFile}} = $lastUpdate;
         $isGroupCache->{$this->{cacheFile}} = {};
+        $isInGroupCache->{$this->{cacheFile}} = {};
     }
 
     writeDebug("cacheAge=$cacheAge, maxCacheAge=$this->{maxCacheAge}, lastUpdate=$lastUpdate, refresh=$refresh");
@@ -1827,6 +1829,20 @@ sub isGroup {
   my $cached = _isGroup($this, $wikiName, $data);
   $isGroupCache->{$this->{cacheFile}}->{$wikiName} = $cached;
   return $cached;
+}
+
+sub getIsInGroup {
+    my ( $this, $cUID, $group ) = @_;
+
+    my $cache = $isInGroupCache->{$this->{cacheFile}};
+    return $cache->{$group}->{$cUID};
+}
+
+sub putIsInGroup {
+    my ( $this, $cUID, $group, $value ) = @_;
+
+    my $cache = $isInGroupCache->{$this->{cacheFile}};
+    $cache->{$group}->{$cUID} = $value;
 }
 
 sub _isGroup {
