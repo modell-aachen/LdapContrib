@@ -1837,15 +1837,15 @@ sub isGroup {
 sub getIsInGroup {
     my ( $this, $cUID, $group ) = @_;
 
-    my %cache = $isInGroupCache->{$this->{cacheFile}};
-    return $cache{$group}{$cUID};
+    my $cache = $isInGroupCache->{$this->{cacheFile}};
+    return $cache->{$group}->{$cUID};
 }
 
 sub putIsInGroup {
     my ( $this, $cUID, $group, $value ) = @_;
 
-    my %cache = $isInGroupCache->{$this->{cacheFile}};
-    $cache{$group}{$cUID} = $value;
+    my $cache = $isInGroupCache->{$this->{cacheFile}};
+    $cache->{$group}->{$cUID} = $value;
 }
 
 sub _isGroup {

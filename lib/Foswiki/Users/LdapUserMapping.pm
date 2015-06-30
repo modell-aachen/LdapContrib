@@ -584,7 +584,7 @@ sub isInGroup {
    my $isInGroup = $this->{ldap}->getIsInGroup($cUID, $group);
    unless ( defined $isInGroup ) {
        $isInGroup = $this->SUPER::isInGroup($cUID, $group, $options);
-       $this->{ldap}->putIsInGroup($cUID, $group);
+       $this->{ldap}->putIsInGroup($cUID, $group, $isInGroup);
    }
    return $isInGroup;
 }
