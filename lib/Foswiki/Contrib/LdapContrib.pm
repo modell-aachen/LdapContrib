@@ -402,6 +402,7 @@ sub connect {
       my $sasl = Authen::SASL->new(
         mechanism => $this->{saslMechanism},    #'DIGEST-MD5 PLAIN CRAM-MD5 EXTERNAL ANONYMOUS',
       );
+      $sasl = $sasl->client_new('ldap', $host);
 
       my $krb5keytab = $ENV{KRB5CCNAME};
       if (my $newkeytab = $this->{krb5CredCache}) {
