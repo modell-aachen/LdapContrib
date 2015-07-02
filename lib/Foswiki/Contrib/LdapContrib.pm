@@ -696,7 +696,13 @@ sub _followLink {
   my $refcfg;
   $refcfg = $Foswiki::cfg{Ldap}{ReferralConfig};
   $refcfg = $refcfg->{$link} if $refcfg;
+
+  return if $Foswiki::cfg{Ldap}{KnownReferralsOnly} && !defined $refcfg;
   $refcfg = {} unless defined $refcfg;
+
+  my $host = $refcfg->{host} || $uri->host;
+  my $port = $refcfg->{port} || $uri->port;
+
   my @keys = keys %$refcfg;
   my @vals = values %$refcfg;
   local @{$this}{@keys} = @vals;
@@ -704,11 +710,11 @@ sub _followLink {
   # remember old connection
   my $oldLdap = $this->{ldap};
   my %thisArgs = %args;
-  $thisArgs{base} = $uri->dn;
-  $thisArgs{port} = $uri->port;
+  $thisArgs{base} = $refcfg->{base} || $uri->dn;
+  $thisArgs{port} = $port;
 
   # trick in new connection
-  $this->connect(undef, undef, $uri->host, $uri->port);
+  $this->connect(undef, undef, $host, $port);
   $this->search(%thisArgs);
   $this->disconnect;
 

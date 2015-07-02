@@ -81,6 +81,12 @@ $Foswiki::cfg{Ldap}{Krb5CredentialsCacheFile} = '';
 $Foswiki::cfg{Ldap}{ReferralConfig} = {};
 
 # **BOOLEAN**
+# If you enable this, referrals from an LDAP server will be ignored unless the
+# referral URL is present as a key in {Ldap}{ReferralConfig}. This avoids
+# following referrals for data that is not actually needed.
+$Foswiki::cfg{Ldap}{KnownReferralsOnly} = 0;
+
+# **BOOLEAN**
 # Use Transort Layer Security (TLS) to encrypt the connection to the LDAP server.
 # You will need to specify the servers CA File using the TLSCAFile option
 $Foswiki::cfg{Ldap}{UseTLS} = 0;
