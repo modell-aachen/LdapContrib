@@ -34,6 +34,7 @@ $RELEASE = "4.33";
 
 our $magic = {};
 our $aliasCache = undef;
+our $wikiname2LoginCache = {};
 our $isGroupCache = {};
 our $isInGroupCache = {};
 our $connectionCache = {};
@@ -712,6 +713,7 @@ sub initCache {
         $magic->{$this->{cacheFile}} = $lastUpdate;
         $isGroupCache->{$this->{cacheFile}} = {};
         $isInGroupCache->{$this->{cacheFile}} = {};
+        $wikiname2LoginCache->{$this->{cacheFile}} = {};
         $aliasCache->{$this->{cacheFile}} = undef;
         $this->{keepCache} = 0;
     } else {
@@ -1997,6 +1999,8 @@ returns the loginNAme of a wikiName or undef if it does not exist
 sub getLoginOfWikiName {
   my ($this, $wikiName, $data) = @_;
 
+  return $wikiname2LoginCache->{$this->{cacheFile}}{$wikiName} if exists $wikiname2LoginCache->{$this->{cacheFile}}{$wikiName};
+
   $data ||= $this->{data};
 
   my $loginName = Foswiki::Sandbox::untaintUnchecked($data->{"W2U::$wikiName"});
@@ -2006,6 +2010,8 @@ sub getLoginOfWikiName {
     $loginName = Foswiki::Sandbox::untaintUnchecked($data->{"W2U::$alias"})
       if defined($alias);
   }
+
+  $wikiname2LoginCache->{$this->{cacheFile}}{$wikiName} = $loginName;
 
   return $loginName;
 }
