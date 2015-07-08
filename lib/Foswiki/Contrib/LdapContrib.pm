@@ -33,6 +33,7 @@ $VERSION = '4.33';
 $RELEASE = "4.33";
 
 our $magic = {};
+our $aliasCache = undef;
 our $isGroupCache = {};
 our $isInGroupCache = {};
 our $connectionCache = {};
@@ -280,13 +281,16 @@ sub new {
   $this->{excludeMap} = \%excludeMap;
 
   # creating alias map
-  my %aliasMap = ();
-  foreach my $alias (split(/\s*,\s*/, $this->{wikiNameAliases})) {
-    if ($alias =~ /^\s*(.+?)\s*=\s*(.+?)\s*$/) {
-      $aliasMap{$1} = $2;
+  unless($aliasCache->{$this->{cacheFile}}) {
+    my %aliasMap = ();
+    foreach my $alias (split(/\s*,\s*/, $this->{wikiNameAliases})) {
+      if ($alias =~ /^\s*(.+?)\s*=\s*(.+?)\s*$/) {
+        $aliasMap{$1} = $2;
+      }
     }
+    $aliasCache->{$this->{cacheFile}} = \%aliasMap;
   }
-  $this->{wikiNameAliases} = \%aliasMap;
+  $this->{wikiNameAliases} = $aliasCache->{$this->{cacheFile}};
 
   # default value for cache expiration is every 24h
   $this->{maxCacheAge} = 86400 unless defined $this->{maxCacheAge};
@@ -708,6 +712,7 @@ sub initCache {
         $magic->{$this->{cacheFile}} = $lastUpdate;
         $isGroupCache->{$this->{cacheFile}} = {};
         $isInGroupCache->{$this->{cacheFile}} = {};
+        $aliasCache->{$this->{cacheFile}} = undef;
         $this->{keepCache} = 0;
     } else {
         $this->{keepCache} = 1;
