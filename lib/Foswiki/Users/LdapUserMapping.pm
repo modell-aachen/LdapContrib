@@ -542,7 +542,10 @@ sub login2cUID {
   #writeDebug("called login2cUID($name)");
 
   my $loginName = $this->{ldap}->getLoginOfWikiName($name);
-  $name = $loginName if defined $loginName; # called with a wikiname
+  if(defined $loginName) {
+        $name = $loginName; # called with a wikiname
+        return $this->{login2cUIDCache}{$name} if defined $this->{login2cUIDCache}{$name};
+  }
 
   my $cUID = $this->{mapping_id}.Foswiki::Users::mapLogin2cUID($name);
 
