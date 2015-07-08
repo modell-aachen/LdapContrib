@@ -39,6 +39,7 @@ $RELEASE = "4.33";
 # There can be multiple files for VirtualHostingContrib.
 our $cachedUpdate = {}; # timestamp of cached entries
 our $aliasCache = undef;
+our $wikiname2LoginCache = {};
 our $isGroupCache = {};
 our $isInGroupCache = {};
 our $connectionCache = {};
@@ -716,6 +717,7 @@ sub initCache {
         $cachedUpdate->{$this->{cacheFile}} = $lastUpdate;
         $isGroupCache->{$this->{cacheFile}} = {};
         $isInGroupCache->{$this->{cacheFile}} = {};
+        $wikiname2LoginCache->{$this->{cacheFile}} = {};
         $aliasCache->{$this->{cacheFile}} = undef;
     }
 
@@ -1994,6 +1996,8 @@ returns the loginNAme of a wikiName or undef if it does not exist
 sub getLoginOfWikiName {
   my ($this, $wikiName, $data) = @_;
 
+  return $wikiname2LoginCache->{$this->{cacheFile}}{$wikiName} if exists $wikiname2LoginCache->{$this->{cacheFile}}{$wikiName};
+
   $data ||= $this->{data};
 
   my $loginName = Foswiki::Sandbox::untaintUnchecked($data->{"W2U::$wikiName"});
@@ -2003,6 +2007,8 @@ sub getLoginOfWikiName {
     $loginName = Foswiki::Sandbox::untaintUnchecked($data->{"W2U::$alias"})
       if defined($alias);
   }
+
+  $wikiname2LoginCache->{$this->{cacheFile}}{$wikiName} = $loginName;
 
   return $loginName;
 }
