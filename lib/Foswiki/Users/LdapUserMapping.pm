@@ -537,7 +537,8 @@ This is used for registration)
 sub login2cUID {
   my ($this, $name, $dontcheck) = @_;
 
-  return $this->{login2cUIDCache}{$name} if defined $this->{login2cUIDCache}{$name};
+  my $cached = $this->{ldap}->getLogin2cUID($name);
+  return $cached if defined $cached;
 
   #writeDebug("called login2cUID($name)");
 
@@ -552,7 +553,7 @@ sub login2cUID {
   unless ($dontcheck) {
     my $wikiName = $this->{ldap}->getWikiNameOfLogin($name);
     return undef unless $wikiName || $loginName;
-    $this->{login2cUIDCache}{$name} = $cUID;
+    $this->{ldap}->putLogin2cUID($name, $cUID);
   }
 
   return $cUID;
