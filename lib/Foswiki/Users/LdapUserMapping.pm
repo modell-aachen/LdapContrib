@@ -542,15 +542,18 @@ sub login2cUID {
 
   my $loginName = $this->{ldap}->getLoginOfWikiName($name);
   if(defined $loginName) {
-        $name = $loginName; # called with a wikiname
-        return $this->{login2cUIDCache}{$name} if defined $this->{login2cUIDCache}{$name};
+    my $cUID = $this->{mapping_id}.Foswiki::Users::mapLogin2cUID($loginName);
+    return undef unless $cUID;
+    $this->{ldap}->putLogin2cUID($name, $cUID);
+    return $cUID;
   }
 
   my $cUID = $this->{mapping_id}.Foswiki::Users::mapLogin2cUID($name);
+  return undef unless $cUID;
 
   unless ($dontcheck) {
     my $wikiName = $this->{ldap}->getWikiNameOfLogin($name);
-    return undef unless $wikiName || $loginName;
+    return undef unless $wikiName;
     $this->{ldap}->putLogin2cUID($name, $cUID);
   }
 
