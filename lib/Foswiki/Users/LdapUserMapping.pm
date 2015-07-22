@@ -605,6 +605,9 @@ sub isInGroup {
         $val;
     };
 
+    my $expand = $options->{expand};
+    $expand = 1 unless defined $expand;
+
     local $scanning{$group} = 1;
     my $it = $this->SUPER::eachGroupMember( $group, { expand => 0 } );
     while ( $it->hasNext() ) {
