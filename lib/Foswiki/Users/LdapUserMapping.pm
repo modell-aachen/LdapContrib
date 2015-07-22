@@ -524,7 +524,9 @@ sub handlesUser {
   # support users from TopicUserMapping anyway, so use an incomplete but fast
   # alternative -KRU
   # return $this->SUPER::handlesUser($cUID, $login, $wikiName);
-  return 1 if $cUID =~ /Group$/ && Foswiki::Func::topicExists($Foswiki::cfg{UsersWebName}, $cUID);
+  return 1 if defined $cUID && $cUID =~ /Group$/ && Foswiki::Func::topicExists($Foswiki::cfg{UsersWebName}, $cUID);
+  return 1 if defined $login && $login =~ /Group$/ && Foswiki::Func::topicExists($Foswiki::cfg{UsersWebName}, $login);
+  return 1 if defined $wikiName && $wikiName =~ /Group$/ && Foswiki::Func::topicExists($Foswiki::cfg{UsersWebName}, $wikiName);
   return 0;
 }
 
