@@ -611,7 +611,7 @@ sub isInGroup {
     $expand = 1 unless defined $expand;
 
     local $scanning{$group} = 1;
-    my $it = $this->SUPER::eachGroupMember( $group, { expand => 0 } );
+    my $it = $this->eachGroupMember( $group, { expand => 0 } );
     while ( $it->hasNext() ) {
         my $u = $it->next();
         next if $scanning{$u};
