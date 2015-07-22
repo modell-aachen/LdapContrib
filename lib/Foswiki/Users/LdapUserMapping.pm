@@ -520,7 +520,12 @@ sub handlesUser {
   $cUID = $this->login2cUID($login) if !$cUID && $login;
   return 1 if defined $cUID && $this->userExists($cUID);
 
-  return $this->SUPER::handlesUser($cUID, $login, $wikiName);
+  # Loading the TopicUserMapping takes a long time and we don't actually fully
+  # support users from TopicUserMapping anyway, so use an incomplete but fast
+  # alternative -KRU
+  # return $this->SUPER::handlesUser($cUID, $login, $wikiName);
+  return 1 if $cUID =~ /Group$/ && Foswiki::Func::topicExists($Foswiki::cfg{UsersWebName}, $cUID);
+  return 0;
 }
 
 =pod
