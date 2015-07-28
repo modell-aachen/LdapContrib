@@ -532,7 +532,10 @@ sub handlesUser {
   return 1 if defined $cUID && $this->userExists($cUID);
 
   # don't ask topic user mapping for large wikis
-  return 0 unless $this->{ldap}{secondaryPasswordManager};
+  unless ($this->{ldap}{secondaryPasswordManager}) {
+    return 1 if $cUID =~ /Group$/ && Foswiki::Func::topicExists($Foswiki::cfg{UsersWebName}, $cUID);
+    return 0;
+  }
 
   #print STDERR "asking SUPER\n";
   return $this->SUPER::handlesUser($cUID, $login, $wikiName);
