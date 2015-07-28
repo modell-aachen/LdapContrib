@@ -558,8 +558,10 @@ sub login2cUID {
 
   my $loginName = $this->{ldap}->getLoginOfWikiName($name);
   if(defined $loginName) {
-    $name = $loginName; # called with a wikiname
-    return $this->{login2cUIDCache}{$name} if defined $this->{login2cUIDCache}{$name};
+    my $cUID = $this->{mapping_id}.Foswiki::Users::mapLogin2cUID($loginName);
+    return undef unless $cUID;
+    $this->{ldap}->putLogin2cUID($name, $cUID);
+    return $cUID;
   }
 
   $name = $this->{ldap}->locale_lc($name) unless $this->{ldap}{caseSensitiveLogin};
