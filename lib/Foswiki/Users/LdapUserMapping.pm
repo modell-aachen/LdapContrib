@@ -626,6 +626,11 @@ sub isInGroup {
   my $expand = $options->{expand};
   $expand = 1 unless defined $expand;
 
+  my $isInGroup = $this->{isInGroupCache}{$cUID} ? $this->{isInGroupCache}{$cUID}{$group} : undef;
+  return $isInGroup if defined $isInGroup;
+  $isInGroup = $this->{ldap}->getIsInGroup($cUID, $group);
+  return $isInGroup if defined $isInGroup;
+
   local $scanning{$group} = 1;
   my $it = $this->eachGroupMember( $group, { expand => 0 } );
   while ( $it->hasNext() ) {
