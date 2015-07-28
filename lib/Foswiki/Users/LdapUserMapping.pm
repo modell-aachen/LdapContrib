@@ -550,16 +550,23 @@ This is used for registration)
 sub login2cUID {
   my ($this, $name, $dontcheck) = @_;
 
+  my $cached = $this->{ldap}->getLogin2cUID($name);
+  return $cached if defined $cached;
+
   my $origName = $name;
   #writeDebug("called login2cUID($name)");
 
   my $loginName = $this->{ldap}->getLoginOfWikiName($name);
-  $name = $loginName if defined $loginName;    # called with a wikiname
+  if(defined $loginName) {
+    $name = $loginName; # called with a wikiname
+    return $this->{login2cUIDCache}{$name} if defined $this->{login2cUIDCache}{$name};
+  }
 
   $name = $this->{ldap}->locale_lc($name) unless $this->{ldap}{caseSensitiveLogin};
   my $cUID = $this->{mapping_id} . Foswiki::Users::mapLogin2cUID($name);
 
   my $valid = $loginName || $this->{ldap}->getWikiNameOfLogin($name);
+  $this->{ldap}->putLogin2cUID($name, $cUID) if $valid;
   return $cUID if $valid;
 
   # don't ask topic user mapping for large wikis

@@ -42,6 +42,7 @@ our %sharedLdapContrib;
 # There can be multiple files for VirtualHostingContrib.
 our $cachedUpdate = {}; # timestamp of cached entries
 our $wikiname2LoginCache = {};
+our $login2cUIDCache = {};
 our $isGroupCache = {};
 our $connectionCache = {};
 our $isInGroupCache = {};
@@ -909,6 +910,7 @@ sub initCache {
         $isGroupCache->{$this->{cacheFile}} = {};
         $isInGroupCache->{$this->{cacheFile}} = {};
         $wikiname2LoginCache->{$this->{cacheFile}} = {};
+        $login2cUIDCache->{$this->{cacheFile}} = {};
     }
 
     writeDebug("cacheAge=$cacheAge, maxCacheAge=$this->{maxCacheAge}, lastUpdate=$lastUpdate, refresh=$refresh");
@@ -2103,6 +2105,20 @@ sub isGroup {
   my $cached = _isGroup($this, $wikiName, $data);
   $isGroupCache->{$this->{cacheFile}}->{$wikiName} = $cached;
   return $cached;
+}
+
+sub getLogin2cUID {
+  my ( $this, $login ) = @_;
+
+  my $cache = $login2cUIDCache->{$this->{cacheFile}};
+  return $cache->{$login};
+}
+
+sub putLogin2cUID {
+  my ( $this, $login, $cUID ) = @_;
+
+  my $cache = $login2cUIDCache->{$this->{cacheFile}};
+  $cache->{$login} = $cUID;
 }
 
 sub getIsInGroup {
