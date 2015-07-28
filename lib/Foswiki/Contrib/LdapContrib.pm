@@ -35,6 +35,13 @@ our $VERSION = '6.11';
 our $RELEASE = '6.11';
 our %sharedLdapContrib;
 
+# Caches
+# Each cache will be kept as long as the process lives and the underlying db
+# file did not change.
+# Each db file has it's own cache (thus all the hashes).
+# There can be multiple files for VirtualHostingContrib.
+our $cachedUpdate = {}; # timestamp of cached entries
+our $isGroupCache = {};
 our $connectionCache = {};
 our $dataCache = {};
 our $connectionTime = {};
@@ -893,6 +900,11 @@ sub initCache {
       writeDebug("suppressing cache refresh within 10 seconds");
     } else {
       $refresh = 1 if $cacheAge > $this->{maxCacheAge};
+    }
+
+    unless ($cachedUpdate->{$this->{cacheFile}} && $cachedUpdate->{$this->{cacheFile}} == $lastUpdate) {
+        $cachedUpdate->{$this->{cacheFile}} = $lastUpdate;
+        $isGroupCache->{$this->{cacheFile}} = {};
     }
 
     writeDebug("cacheAge=$cacheAge, maxCacheAge=$this->{maxCacheAge}, lastUpdate=$lastUpdate, refresh=$refresh");
@@ -2078,6 +2090,18 @@ check if a given user is an ldap group actually
 =cut
 
 sub isGroup {
+  my ($this, $wikiName, $data) = @_;
+
+  if(exists $isGroupCache->{$this->{cacheFile}}->{$wikiName}) {
+      return $isGroupCache->{$this->{cacheFile}}->{$wikiName};
+  }
+
+  my $cached = _isGroup($this, $wikiName, $data);
+  $isGroupCache->{$this->{cacheFile}}->{$wikiName} = $cached;
+  return $cached;
+}
+
+sub _isGroup {
   my ($this, $wikiName, $data) = @_;
 
   #writeDebug("called isGroup($wikiName)");
