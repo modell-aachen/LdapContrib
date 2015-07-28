@@ -35,6 +35,10 @@ our $VERSION = '6.11';
 our $RELEASE = '6.11';
 our %sharedLdapContrib;
 
+our $connectionCache = {};
+our $dataCache = {};
+our $connectionTime = {};
+
 =pod
 
 ---+ Foswiki::Contrib::LdapContrib
@@ -484,7 +488,9 @@ sub finish {
   undef $this->{_groups};
   undef $this->{_groupId};
 
-  $this->untieCache();
+  undef $this->{cacheDB};
+  # NOTE: We no longer untie the db here, it will be kept tied as long as the
+  # process lives, or a new db was created.
 }
 
 =pod
@@ -852,7 +858,19 @@ sub initCache {
 
   # open cache
   #writeDebug("opening ldap cache from $this->{cacheFile}");
-  $this->tieCache('read');
+  my @stat = stat($this->{cacheFile});
+  if($stat[0] && $connectionTime->{$this->{cacheFile}} && $connectionTime->{$this->{cacheFile}} == $stat[9]) {
+      $this->{cacheDB} = $connectionCache->{$this->{cacheFile}};
+      $this->{data} = $dataCache->{$this->{cacheFile}};
+  } else {
+      untie $this->{data};
+      undef $connectionCache->{$this->{cacheFile}};
+      undef $dataCache->{$this->{cacheFile}};
+      $this->tieCache('read');
+      $connectionCache->{$this->{cacheFile}} = $this->{cacheDB};
+      $dataCache->{$this->{cacheFile}} = $this->{data};
+      $connectionTime->{$this->{cacheFile}} = $stat[9];
+  }
 
   # refresh by user interaction
   my $refresh = '';
@@ -997,12 +1015,19 @@ sub refreshCache {
 
   # try to be transactional
   $this->untieCache();
+  undef $connectionCache->{$this->{cacheFile}};
+  undef $dataCache->{$this->{cacheFile}};
 
   #writeDebug("replacing working copy");
   rename $tempCacheFile, $this->{cacheFile};
 
   # reconnect hash
   $this->tieCache('read');
+
+  my @stat = stat($this->{cacheFile});
+  $connectionCache->{$this->{cacheFile}} = $this->{cacheDB};
+  $dataCache->{$this->{cacheFile}} = $this->{data};
+  $connectionTime->{$this->{cacheFile}} = $stat[9];
 
   undef $this->{_refreshMode};
 
