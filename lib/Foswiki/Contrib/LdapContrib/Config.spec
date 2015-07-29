@@ -1,5 +1,5 @@
 # ---+ Extensions
-# ---++ LDAP Contrib
+# ---++ LDAP 
 # This is the configuration used by the <b>LdapContrib</b> and the
 # <b>LdapNgPlugin</b>.
 # <p>
@@ -17,6 +17,12 @@ $Foswiki::cfg{Ldap}{Host} = 'ldap.my.domain.com';
 # **NUMBER**
 # Port used when binding to the LDAP server
 $Foswiki::cfg{Ldap}{Port} = 389;
+
+# **BOOLEAN**
+# Switch on this flag to enable IPv6 support when connecting to the LDAP server. 
+# Note that IPv6+SSL is still considered experimental. When disabled a normal IPv4 connection is established.
+# To make use of this feature you require IO::Socket::INET6.
+$Foswiki::cfg{Ldap}{IPv6} = 0;
 
 # **NUMBER**
 # Ldap protocol version to use when querying the server;
@@ -36,6 +42,17 @@ $Foswiki::cfg{Ldap}{BindDN} = '';
 # The password used when binding to the LDAP server
 $Foswiki::cfg{Ldap}{BindPassword} = 'secret';
 
+# **STRING**
+# Set this to the charset encoding of data coming from the LDAP server.
+# Normally this should be 'utf-8', but might differ in some cases.
+# Data read from the server will then be converted from this encoding
+# and translated to your site's charset encoding as configured in <code>{Site}{CharSet}</code>.
+# WARNING: if you change the charset encoding after having used a different one for some time
+# you will require to remove all cached data in <code>.../working/work_areas/LdapContrib</code>
+# and <code>.../working/work_areas/LdapNgPlugin/cache</code>. Otherwise this data 
+# will be reused assuming a false charset encoding.
+$Foswiki::cfg{Ldap}{CharSet} = 'utf-8';
+
 # **BOOLEAN**
 # Use SASL authentication when binding to the server; Note, when using SASL the
 # BindDN and BindPassword setting are used to configure the SASL access.
@@ -45,6 +62,29 @@ $Foswiki::cfg{Ldap}{UseSASL} = 0;
 # List of SASL authentication mechanism to try; defaults to 'PLAIN CRAM-MD5
 # EXTERNAL ANONYMOUS'
 $Foswiki::cfg{Ldap}{SASLMechanism} = 'PLAIN CRAM-MD5 EXTERNAL ANONYMOUS';
+
+# **STRING**
+# If the GSSAPI mechanism is used in {Ldap}{SASLMechanism}, and the underlying
+# implementation is MIT Kerberos 5, this setting can be used to override the
+# ticket cache file to be used.
+$Foswiki::cfg{Ldap}{Krb5CredentialsCacheFile} = '';
+
+# **PERL**
+# Add a key for each LDAP referral link to supply a hashref with configuration
+# overrides for the referral target. This can be used to override auth
+# mechanisms and credentials. Please note that for technical reasons the keys
+# in the hashref have to match the internal keys of the LdapContrib object
+# rather than the keys in this configuration.
+# The following is a list of relevant keys: host, base, port, ipv6, bindDN,
+# bindPassword, useSASL, saslMechanism, krb5CredCache, useTLS, tlsVerify,
+# tlsSSLVersion, tlsCAFile, tlsCAPath, tlsClientCert, tlsClientKey
+$Foswiki::cfg{Ldap}{ReferralConfig} = {};
+
+# **BOOLEAN**
+# If you enable this, referrals from an LDAP server will be ignored unless the
+# referral URL is present as a key in {Ldap}{ReferralConfig}. This avoids
+# following referrals for data that is not actually needed.
+$Foswiki::cfg{Ldap}{KnownReferralsOnly} = 0;
 
 # **BOOLEAN**
 # Use Transort Layer Security (TLS) to encrypt the connection to the LDAP server.
@@ -87,10 +127,9 @@ $Foswiki::cfg{Ldap}{Debug} = 0;
 # ---+++ User settings
 # The options below configure how the wiki will extract account records from LDAP.
 
-# **STRING**
-# The distinguished name of the users tree. All user accounts will
-# be searched for in the subtree under UserBase.
-$Foswiki::cfg{Ldap}{UserBase} = 'ou=people,dc=my,dc=domain,dc=com';
+# **PERL**
+# A list of trees where to search for users records. 
+$Foswiki::cfg{Ldap}{UserBase} = ['ou=people,dc=my,dc=domain,dc=com'];
 
 # **STRING**
 # Filter to be used to find login accounts. Compare to GroupFilter below
@@ -109,7 +148,10 @@ $Foswiki::cfg{Ldap}{LoginAttribute} = 'sAMAccountName';
 # **STRING**
 # The case sensitivity attribute. This is the attribute name used to enable
 # case insensitivity.
-$Foswiki::cfg{Ldap}{CaseSensitivity} = 'off';
+# Note that this is for backwards compatibility; it will only have an effect if set to 'on'
+# (the effect will be equal to enabling {caseSensitiveLogin}; the actual value of that setting will be ignored).
+# Please use {caseSensitiveLogin} instead.
+$Foswiki::cfg{Ldap}{CaseSensitivity} = '';
 
 # **STRING**
 # The user mail attribute. This is the attribute name used to fetch
@@ -136,6 +178,10 @@ $Foswiki::cfg{Ldap}{NormalizeWikiNames} = 1;
 # **BOOLEAN**
 # Enable/disable normalization of login names
 $Foswiki::cfg{Ldap}{NormalizeLoginNames} = 0;
+
+# **BOOLEAN**
+# Enable/disable case sensitive login names. If disabled case doesn't matter logging in.
+$Foswiki::cfg{Ldap}{CaseSensitiveLogin} = 0;
 
 # **STRING**
 # Alias old !WikiNames to new account. This is a comma separated list of
@@ -180,16 +226,22 @@ $Foswiki::cfg{Ldap}{AllowChangePassword} = 0;
 # registered to the wiki natively. Note, that <b>this must not be Foswiki::Users::LdapPasswdUser again!</b>
 $Foswiki::cfg{Ldap}{SecondaryPasswordManager} = 'none';
 
+# **STRING**
+# This parameter allows to hard-code a LoginName-to-WikiName mapping in a wiki topic. This 
+# feature may be used to migrate from a TopicUserMapping to LdapUserMapping by preserving any already existing
+# mapping stored in Main.WikiUsers. Leave it empty to disable this feature and build WikiNames by reading
+# LDAP attributes as normal. 
+$Foswiki::cfg{Ldap}{UserMappingTopic} = '';
+
 # ---+++ Group settings
 # The settings below configures the mapping and processing of LoginNames and WikiNames as
 # well as the use of LDAP groups.
 # In any case you have to select the LdapUserMapping as the UserMappingManager in the
 # Security Section section above.
 
-# **STRING**
-# The distinguished name of the groups tree. All group definitions
-# are used in the subtree under GroupBase.
-$Foswiki::cfg{Ldap}{GroupBase} = 'ou=group,dc=my,dc=domain,dc=com';
+# **PERL**
+# A list of trees where to search for group records.
+$Foswiki::cfg{Ldap}{GroupBase} = ['ou=group,dc=my,dc=domain,dc=com'];
 
 # **STRING**
 # Filter to be used to find groups. Compare to LoginFilter.
@@ -300,3 +352,5 @@ $Foswiki::cfg{Ldap}{PageSize} = 500;
 # **STRING 50**
 # Prevent certain names from being looked up in LDAP
 $Foswiki::cfg{Ldap}{Exclude} = 'WikiGuest, ProjectContributor, RegistrationAgent, UnknownUser, AdminGroup, NobodyGroup, AdminUser, admin, guest';
+
+1;

@@ -1,6 +1,6 @@
 # Module of Foswiki - The Free and Open Source Wiki, http://foswiki.org/
 #
-# Copyright (C) 2006-2012 Michael Daum http://michaeldaumconsulting.com
+# Copyright (C) 2006-2014 Michael Daum http://michaeldaumconsulting.com
 # Portions Copyright (C) 2006 Spanlink Communications
 #
 # This program is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@ use Foswiki::Users::Password;
 our @ISA = qw( Foswiki::Users::Password );
 
 use strict;
+use warnings;
 
 use Foswiki::Contrib::LdapContrib ();
 use Foswiki::Plugins ();
@@ -55,7 +56,7 @@ delegate LDAP calls and returns a new Foswiki::User::LdapPasswd object
 sub new {
   my ($class, $session) = @_;
 
-  my $this = bless($class->SUPER::new( $session ), $class);
+  my $this = bless($class->SUPER::new($session), $class);
   $this->{ldap} = &Foswiki::Contrib::LdapContrib::getLdapContrib($session);
 
   my $secondaryImpl = $this->{ldap}->{secondaryPasswordManager};
@@ -94,7 +95,6 @@ sub writeDebug {
   print STDERR "- LdapPasswdUser - $_[0]\n" if $Foswiki::cfg{Ldap}{Debug};
 }
 
-
 =pod 
 
 ---++ fetchPass($login) -> $passwd
@@ -115,7 +115,7 @@ sub fetchPass {
   # a user is more expensive than just checking the existence
   # the _user_exists context is set in LdapUserMapping::userExists()
   # when backing off to native groups anyway
-  return $this->userExists($login) 
+  return $this->userExists($login)
     if $this->{session}->inContext("_user_exists");
 
   # foswiki tends to feed all sorts of strings to fetchPass,
@@ -127,11 +127,12 @@ sub fetchPass {
   my $passwd = $this->{passwords}{$login};
 
   unless (defined $passwd) {
-    my $entry = $this->{ldap}->getAccount($login); # expensive
-
-    $passwd = $entry->get_value('userPassword') if $entry;
-    $passwd = $this->{secondaryPasswordManager}->fetchPass($login)
-      if !defined($passwd) && $this->{secondaryPasswordManager};
+    $passwd = $this->userExists($login);
+    #   my $entry = $this->{ldap}->getAccount($login); # expensive
+    #
+    #   $passwd = $entry->get_value('userPassword') if $entry;
+    #   $passwd = $this->{secondaryPasswordManager}->fetchPass($login)
+    #     if !defined($passwd) && $this->{secondaryPasswordManager};
 
     $passwd = 0 unless defined $passwd;
     $this->{passwords}{$login} = $passwd;
@@ -155,9 +156,9 @@ sub userExists {
 
   #writeDebug("called userExists($name)");
 
-  return 1 if 
-    $this->{ldap}->getWikiNameOfLogin($name) || 
-    $this->{ldap}->getLoginOfWikiName($name);
+  return 1
+    if $this->{ldap}->getWikiNameOfLogin($name)
+      || $this->{ldap}->getLoginOfWikiName($name);
 
   if ($this->{secondaryPasswordManager}) {
     #writeDebug("asking secondary password manager");
@@ -168,7 +169,6 @@ sub userExists {
 
   return 0;
 }
-
 
 =pod 
 
@@ -210,8 +210,9 @@ we can change passwords, so return false
 sub readOnly {
   my $this = shift;
 
-  return $this->{secondaryPasswordManager}->readOnly()
-    if $this->{secondaryPasswordManager};
+  if ($Foswiki::cfg{Ldap}{AllowChangePassword}) {
+    $this->{session}->enterContext('passwords_modifyable');
+  }
 }
 
 =pod
@@ -246,7 +247,7 @@ sub getEmails {
   # get emails from ldap
   my $emails = $this->{ldap}->getEmails($login);
 
-  return @{$emails} if $emails;
+  return @{$emails} if $emails && @$emails;
 
   return $this->{secondaryPasswordManager}->getEmails($login)
     if $this->{secondaryPasswordManager};
@@ -311,7 +312,7 @@ In any other case the secondary password manager gets the job.
 =cut
 
 sub passwd {
-  my ( $this, $user, $newPassword, $oldPassword ) = @_;
+  my ($this, $user, $newPassword, $oldPassword) = @_;
 
   if ($this->{ldap}->{allowChangePassword} && defined($oldPassword) && $oldPassword ne '1') {
     if ($this->{ldap}->getDnOfLogin($user)) {
@@ -348,7 +349,7 @@ sub encrypt {
 
   return $this->{secondaryPasswordManager}->encrypt(@_)
     if $this->{secondaryPasswordManager};
-  
+
   $this->{error} = 'System does not support encrypting passwords';
   return '';
 }
@@ -377,7 +378,7 @@ sub setPassword {
   if ($isOk) {
     $this->{error} = undef;
     return 1;
-  } 
+  }
 
   return $this->{secondaryPasswordManager}->setPassword($login, $newUserPassword, $oldUserPassword)
     if $this->{secondaryPasswordManager};
@@ -401,7 +402,7 @@ sub setEmails {
 
   return $this->{secondaryPasswordManager}->setEmails(@_)
     if $this->{secondaryPasswordManager};
-  
+
   $this->{error} = 'System does not support setting the email adress';
   return '';
 }
@@ -431,7 +432,7 @@ sub findUserByEmail {
   return undef unless $users;
 
   # remove duplicates
-  my %users = map {$_ => $_} @$users;
+  my %users = map { $_ => $_ } @$users;
   my @users = values %users;
   return \@users;
 }
@@ -463,6 +464,5 @@ sub fetchUsers {
   #print STDERR "fetchUsers=".join(',', @$users)."\n";
   return new Foswiki::ListIterator($users);
 }
-
 
 1;
