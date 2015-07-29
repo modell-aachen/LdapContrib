@@ -35,6 +35,20 @@ our $VERSION = '6.11';
 our $RELEASE = '6.11';
 our %sharedLdapContrib;
 
+# Caches
+# Each cache will be kept as long as the process lives and the underlying db
+# file did not change.
+# Each db file has it's own cache (thus all the hashes).
+# There can be multiple files for VirtualHostingContrib.
+our $cachedUpdate = {}; # timestamp of cached entries
+our $wikiname2LoginCache = {};
+our $login2cUIDCache = {};
+our $isGroupCache = {};
+our $connectionCache = {};
+our $isInGroupCache = {};
+our $dataCache = {};
+our $connectionTime = {};
+
 =pod
 
 ---+ Foswiki::Contrib::LdapContrib
@@ -484,7 +498,8 @@ sub finish {
   undef $this->{_groups};
   undef $this->{_groupId};
 
-  $this->untieCache();
+  undef $this->{cacheDB};
+#  $this->untieCache();
 }
 
 =pod
@@ -896,7 +911,19 @@ sub initCache {
 
   # open cache
   #writeDebug("opening ldap cache from $this->{cacheFile}");
-  $this->tieCache('read');
+  my @stat = stat($this->{cacheFile});
+  if($stat[0] && $connectionTime->{$this->{cacheFile}} && $connectionTime->{$this->{cacheFile}} == $stat[9]) {
+      $this->{cacheDB} = $connectionCache->{$this->{cacheFile}};
+      $this->{data} = $dataCache->{$this->{cacheFile}};
+  } else {
+      untie $this->{data};
+      undef $connectionCache->{$this->{cacheFile}};
+      undef $dataCache->{$this->{cacheFile}};
+      $this->tieCache('read');
+      $connectionCache->{$this->{cacheFile}} = $this->{cacheDB};
+      $dataCache->{$this->{cacheFile}} = $this->{data};
+      $connectionTime->{$this->{cacheFile}} = $stat[9];
+  }
 
   # refresh by user interaction
   my $refresh = '';
@@ -919,6 +946,14 @@ sub initCache {
       writeDebug("suppressing cache refresh within 10 seconds");
     } else {
       $refresh = 1 if $cacheAge > $this->{maxCacheAge};
+    }
+
+    unless ($cachedUpdate->{$this->{cacheFile}} && $cachedUpdate->{$this->{cacheFile}} == $lastUpdate) {
+        $cachedUpdate->{$this->{cacheFile}} = $lastUpdate;
+        $isGroupCache->{$this->{cacheFile}} = {};
+        $isInGroupCache->{$this->{cacheFile}} = {};
+        $wikiname2LoginCache->{$this->{cacheFile}} = {};
+        $login2cUIDCache->{$this->{cacheFile}} = {};
     }
 
     writeDebug("cacheAge=$cacheAge, maxCacheAge=$this->{maxCacheAge}, lastUpdate=$lastUpdate, refresh=$refresh");
@@ -1041,12 +1076,19 @@ sub refreshCache {
 
   # try to be transactional
   $this->untieCache();
+  undef $connectionCache->{$this->{cacheFile}};
+  undef $dataCache->{$this->{cacheFile}};
 
   #writeDebug("replacing working copy");
   rename $tempCacheFile, $this->{cacheFile};
 
   # reconnect hash
   $this->tieCache('read');
+
+  my @stat = stat($this->{cacheFile});
+  $connectionCache->{$this->{cacheFile}} = $this->{cacheDB};
+  $dataCache->{$this->{cacheFile}} = $this->{data};
+  $connectionTime->{$this->{cacheFile}} = $stat[9];
 
   undef $this->{_refreshMode};
 
@@ -2099,6 +2141,46 @@ check if a given user is an ldap group actually
 sub isGroup {
   my ($this, $wikiName, $data) = @_;
 
+  if(exists $isGroupCache->{$this->{cacheFile}}->{$wikiName}) {
+      return $isGroupCache->{$this->{cacheFile}}->{$wikiName};
+  }
+
+  my $cached = _isGroup($this, $wikiName, $data);
+  $isGroupCache->{$this->{cacheFile}}->{$wikiName} = $cached;
+  return $cached;
+}
+
+sub getLogin2cUID {
+  my ( $this, $login ) = @_;
+
+  my $cache = $login2cUIDCache->{$this->{cacheFile}};
+  return $cache->{$login};
+}
+
+sub putLogin2cUID {
+  my ( $this, $login, $cUID ) = @_;
+
+  my $cache = $login2cUIDCache->{$this->{cacheFile}};
+  $cache->{$login} = $cUID;
+}
+
+sub getIsInGroup {
+  my ( $this, $cUID, $group ) = @_;
+
+  my $cache = $isInGroupCache->{$this->{cacheFile}};
+  return $cache->{$group}->{$cUID};
+}
+
+sub putIsInGroup {
+  my ( $this, $cUID, $group, $value ) = @_;
+
+  my $cache = $isInGroupCache->{$this->{cacheFile}};
+  $cache->{$group}->{$cUID} = $value;
+}
+
+sub _isGroup {
+  my ($this, $wikiName, $data) = @_;
+
   #writeDebug("called isGroup($wikiName)");
   $data ||= $this->{data};
 
@@ -2241,6 +2323,8 @@ returns the loginNAme of a wikiName or undef if it does not exist
 sub getLoginOfWikiName {
   my ($this, $wikiName, $data) = @_;
 
+  return $wikiname2LoginCache->{$this->{cacheFile}}{$wikiName} if exists $wikiname2LoginCache->{$this->{cacheFile}}{$wikiName};
+
   $data ||= $this->{data};
 
   my $loginName = Foswiki::Sandbox::untaintUnchecked($data->{"W2U::$wikiName"});
@@ -2250,6 +2334,8 @@ sub getLoginOfWikiName {
     $loginName = Foswiki::Sandbox::untaintUnchecked($data->{"W2U::$alias"})
       if defined($alias);
   }
+
+  $wikiname2LoginCache->{$this->{cacheFile}}{$wikiName} = $loginName;
 
   return $loginName;
 }
