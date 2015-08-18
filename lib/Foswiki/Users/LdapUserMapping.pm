@@ -131,7 +131,6 @@ sub getLoginName {
   $login = $this->{ldap}->locale_lc($login) unless $this->{ldap}{caseSensitiveLogin};
 
   return $login if $this->{ldap}->getWikiNameOfLogin($login);
-  return $this->SUPER::getLoginName($cUID) if $this->{ldap}{secondaryPasswordManager};
   return $login;
 }
 
@@ -488,7 +487,6 @@ sub findUserByWikiName {
     push @users, $wikiName;
   } else {
     my $loginName = $this->{ldap}->getLoginOfWikiName($wikiName) || $wikiName;
-    return $this->SUPER::findUserByWikiName($wikiName) if !$loginName && $this->{ldap}->{secondaryPasswordManager};
     my $cUID = $this->login2cUID($loginName, 1);
     push @users, $cUID if $cUID;
   }
@@ -531,16 +529,10 @@ sub handlesUser {
   $cUID = $this->login2cUID($login) if !$cUID && $login;
   return 1 if defined $cUID && $this->userExists($cUID);
 
-  # don't ask topic user mapping for large wikis
-  unless ($this->{ldap}{secondaryPasswordManager}) {
-    return 1 if defined $cUID && $cUID =~ /Group$/ && Foswiki::Func::topicExists($Foswiki::cfg{UsersWebName}, $cUID);
-    return 1 if defined $login && $login =~ /Group$/ && Foswiki::Func::topicExists($Foswiki::cfg{UsersWebName}, $login);
-    return 1 if defined $wikiName && $wikiName =~ /Group$/ && Foswiki::Func::topicExists($Foswiki::cfg{UsersWebName}, $wikiName);
-    return 0;
-  }
-
-  #print STDERR "asking SUPER\n";
-  return $this->SUPER::handlesUser($cUID, $login, $wikiName);
+  return 1 if defined $cUID && $cUID =~ /Group$/ && Foswiki::Func::topicExists($Foswiki::cfg{UsersWebName}, $cUID);
+  return 1 if defined $login && $login =~ /Group$/ && Foswiki::Func::topicExists($Foswiki::cfg{UsersWebName}, $login);
+  return 1 if defined $wikiName && $wikiName =~ /Group$/ && Foswiki::Func::topicExists($Foswiki::cfg{UsersWebName}, $wikiName);
+  return 0;
 }
 
 =pod
@@ -580,11 +572,6 @@ sub login2cUID {
   my $valid = $loginName || $this->{ldap}->getWikiNameOfLogin($name);
   $this->{ldap}->putLogin2cUID($name, $cUID) if $valid;
   return $cUID if $valid;
-
-  # don't ask topic user mapping for large wikis
-  if ($this->{ldap}{secondaryPasswordManager}) {
-    return $this->SUPER::login2cUID($origName, $dontcheck);
-  }
 
   return $cUID if $dontcheck;
 }

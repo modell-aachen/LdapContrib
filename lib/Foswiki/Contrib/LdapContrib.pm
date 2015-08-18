@@ -241,7 +241,6 @@ sub new {
     tlsClientCert => $Foswiki::cfg{Ldap}{TLSClientCert} || '',
     tlsClientKey => $Foswiki::cfg{Ldap}{TLSClientKey} || '',
 
-    secondaryPasswordManager => $Foswiki::cfg{Ldap}{SecondaryPasswordManager} || '',
     @_
   };
   # Modell Aachen custom
@@ -266,17 +265,6 @@ sub new {
   if ($this->{useSASL}) {
     #writeDebug("will use SASL authentication");
     require Authen::SASL;
-  }
-
-  # protect against actidental misconfiguration, that might lead
-  # to an infinite loop during authorization etc.
-  if ($this->{secondaryPasswordManager} eq 'Foswiki::Users::LdapPasswdUser') {
-    writeWarning("hey, you want infinite loops? naw.");
-    $this->{secondaryPasswordManager} = '';
-  }
-
-  if ($this->{secondaryPasswordManager} eq 'none') {
-    $this->{secondaryPasswordManager} = '';
   }
 
   my $workArea = $session->{store}->getWorkArea('LdapContrib');

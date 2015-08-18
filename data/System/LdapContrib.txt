@@ -80,16 +80,6 @@ you have to register the <nop>LdapPasswdUser class as the so called
 
 <verbatim>$Foswiki::cfg{PasswordManager} = 'Foswiki::Users::LdapPasswdUser';</verbatim>
 
-There is a further option to fallback to the normal authentication mechanism
-by defining a secondary password manager. This allows you to create native wiki
-accounts, e.g. a <nop>WikiAdmin account and authenticate him without LDAP.
-Use the following setting to fallback to a htpasswd based authentication.
-
-<verbatim>$Foswiki::cfg{Ldap}{SecondaryPasswordManager} = 'Foswiki::Users::HtPasswdUser';</verbatim>
-
-So whenever authentication against LDAP fails, this second password manager will
-be used. 
-
 ---++ User Groups
 LDAP group records can be used in access control lists by registering a
 <nop>UserMappingManager implementation. This is done by adding the following 
