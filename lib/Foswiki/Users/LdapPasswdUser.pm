@@ -59,13 +59,6 @@ sub new {
   my $this = bless($class->SUPER::new($session), $class);
   $this->{ldap} = &Foswiki::Contrib::LdapContrib::getLdapContrib($session);
 
-  my $secondaryImpl = $this->{ldap}->{secondaryPasswordManager};
-  if ($secondaryImpl) {
-    eval "use $secondaryImpl";
-    die "Secondary Password Manager: $@" if $@;
-    $this->{secondaryPasswordManager} = $secondaryImpl->new($session);
-  }
-
   return $this;
 }
 
@@ -148,11 +141,6 @@ sub userExists {
     if $this->{ldap}->getWikiNameOfLogin($name)
       || $this->{ldap}->getLoginOfWikiName($name);
 
-  if ($this->{secondaryPasswordManager}) {
-    #writeDebug("asking secondary password manager");
-    my $passwd = $this->{secondaryPasswordManager}->fetchPass($name);
-    return 1 if defined $passwd;
-  }
   #writeDebug("$name is unknown");
 
   return 0;
@@ -180,9 +168,6 @@ sub checkPassword {
 
   return $this->{ldap}->connect($dn, $passU)
     if $dn;
-
-  return $this->{secondaryPasswordManager}->checkPassword($login, $passU)
-    if $this->{secondaryPasswordManager};
 
   return 0;
 }
@@ -237,9 +222,6 @@ sub getEmails {
 
   return @{$emails} if $emails && @$emails;
 
-  return $this->{secondaryPasswordManager}->getEmails($login)
-    if $this->{secondaryPasswordManager};
-
   return ();
 }
 
@@ -258,8 +240,6 @@ sub finish {
   $this->{ldap}->finish() if $this->{ldap};
   undef $this->{ldap};
   undef $this->{passwords};
-  $this->{secondaryPasswordManager}->finish(@_)
-    if $this->{secondaryPasswordManager};
 }
 
 =pod
@@ -276,9 +256,6 @@ Returns 1 on success, undef on failure.
 
 sub removeUser {
   my $this = shift;
-
-  return $this->{secondaryPasswordManager}->removeUser(@_)
-    if $this->{secondaryPasswordManager};
 
   $this->{error} = 'System does not support removing users';
   return undef;
@@ -310,14 +287,6 @@ sub passwd {
     }
   }
 
-  if ($this->{secondaryPasswordManager}) {
-    my $result = $this->{secondaryPasswordManager}->passwd($user, $newPassword, $oldPassword);
-    unless ($result) {
-      $this->{error} = $this->{secondaryPasswordManager}->{error};
-    }
-    return $result;
-  }
-
   $this->{error} = 'System does not support adding a user or forcing a  password change';
   return undef;
 }
@@ -334,9 +303,6 @@ password manager can.
 
 sub encrypt {
   my $this = shift;
-
-  return $this->{secondaryPasswordManager}->encrypt(@_)
-    if $this->{secondaryPasswordManager};
 
   $this->{error} = 'System does not support encrypting passwords';
   return '';
@@ -368,9 +334,6 @@ sub setPassword {
     return 1;
   }
 
-  return $this->{secondaryPasswordManager}->setPassword($login, $newUserPassword, $oldUserPassword)
-    if $this->{secondaryPasswordManager};
-
   $this->error();
   return undef;
 }
@@ -387,9 +350,6 @@ password manager can.
 
 sub setEmails {
   my $this = shift;
-
-  return $this->{secondaryPasswordManager}->setEmails(@_)
-    if $this->{secondaryPasswordManager};
 
   $this->{error} = 'System does not support setting the email adress';
   return '';
@@ -409,20 +369,7 @@ sub findUserByEmail {
   my ($this, $email) = @_;
 
   my $users = $this->{ldap}->getLoginOfEmail($email);
-  return $users unless $this->{secondaryPasswordManager};
-
-  # add those from the secondary
-  my $moreUsers = $this->{secondaryPasswordManager}->findUserByEmail($email);
-
-  push @$users, @{$moreUsers} if $moreUsers;
-
-  # nothing found
-  return undef unless $users;
-
-  # remove duplicates
-  my %users = map { $_ => $_ } @$users;
-  my @users = values %users;
-  return \@users;
+  return $users;
 }
 
 =pod 

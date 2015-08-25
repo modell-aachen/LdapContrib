@@ -27,6 +27,9 @@ our @ISA = qw( Foswiki::Users::TopicUserMapping );
 
 use vars qw($isLoadedMapping);
 
+# For recursively checking group memberships but not recursing forever
+my %scanning;
+
 =pod
 
 ---+ Foswiki::Users::LdapUserMapping
@@ -53,6 +56,7 @@ sub new {
   my $this = bless($class->SUPER::new($session), $class);
   $this->{ldap} = &Foswiki::Contrib::LdapContrib::getLdapContrib($session);
   $this->{eachGroupMember} = {};
+  $this->{isInGroupCache} = {};
 
   return $this;
 }
@@ -72,6 +76,7 @@ sub finish {
   $this->{ldap}->finish() if $this->{ldap};
   undef $this->{ldap};
   undef $this->{eachGroupMember};
+  undef $this->{isInGroupCache};
   $this->SUPER::finish();
 }
 
@@ -126,7 +131,6 @@ sub getLoginName {
   $login = $this->{ldap}->locale_lc($login) unless $this->{ldap}{caseSensitiveLogin};
 
   return $login if $this->{ldap}->getWikiNameOfLogin($login);
-  return $this->SUPER::getLoginName($cUID) if $this->{ldap}{secondaryPasswordManager};
   return $login;
 }
 
@@ -483,7 +487,6 @@ sub findUserByWikiName {
     push @users, $wikiName;
   } else {
     my $loginName = $this->{ldap}->getLoginOfWikiName($wikiName) || $wikiName;
-    return $this->SUPER::findUserByWikiName($wikiName) if !$loginName && $this->{ldap}->{secondaryPasswordManager};
     my $cUID = $this->login2cUID($loginName, 1);
     push @users, $cUID if $cUID;
   }
@@ -526,11 +529,10 @@ sub handlesUser {
   $cUID = $this->login2cUID($login) if !$cUID && $login;
   return 1 if defined $cUID && $this->userExists($cUID);
 
-  # don't ask topic user mapping for large wikis
-  return 0 unless $this->{ldap}{secondaryPasswordManager};
-
-  #print STDERR "asking SUPER\n";
-  return $this->SUPER::handlesUser($cUID, $login, $wikiName);
+  return 1 if defined $cUID && $cUID =~ /Group$/ && Foswiki::Func::topicExists($Foswiki::cfg{UsersWebName}, $cUID);
+  return 1 if defined $login && $login =~ /Group$/ && Foswiki::Func::topicExists($Foswiki::cfg{UsersWebName}, $login);
+  return 1 if defined $wikiName && $wikiName =~ /Group$/ && Foswiki::Func::topicExists($Foswiki::cfg{UsersWebName}, $wikiName);
+  return 0;
 }
 
 =pod
@@ -550,22 +552,26 @@ This is used for registration)
 sub login2cUID {
   my ($this, $name, $dontcheck) = @_;
 
+  my $cached = $this->{ldap}->getLogin2cUID($name);
+  return $cached if defined $cached;
+
   my $origName = $name;
   #writeDebug("called login2cUID($name)");
 
   my $loginName = $this->{ldap}->getLoginOfWikiName($name);
-  $name = $loginName if defined $loginName;    # called with a wikiname
+  if(defined $loginName) {
+    my $cUID = $this->{mapping_id}.Foswiki::Users::mapLogin2cUID($loginName);
+    return undef unless $cUID;
+    $this->{ldap}->putLogin2cUID($name, $cUID);
+    return $cUID;
+  }
 
   $name = $this->{ldap}->locale_lc($name) unless $this->{ldap}{caseSensitiveLogin};
   my $cUID = $this->{mapping_id} . Foswiki::Users::mapLogin2cUID($name);
 
   my $valid = $loginName || $this->{ldap}->getWikiNameOfLogin($name);
+  $this->{ldap}->putLogin2cUID($name, $cUID) if $valid;
   return $cUID if $valid;
-
-  # don't ask topic user mapping for large wikis
-  if ($this->{ldap}{secondaryPasswordManager}) {
-    return $this->SUPER::login2cUID($origName, $dontcheck);
-  }
 
   return $cUID if $dontcheck;
 }
@@ -590,6 +596,42 @@ sub groupAllowsChange {
     if $this->{session}->topicExists($groupWeb, $groupName);
 
   return 0;
+}
+
+sub isInGroup {
+  my ( $this, $cUID, $group, $options ) = @_;
+
+  my $cache = sub {
+      my ($cUID, $group, $val) = @_;
+      $this->{isInGroupCache}{$cUID}{$group} = $val;
+      if ($this->{ldap}->isGroup($group)) {
+          $this->{ldap}->putIsInGroup($cUID, $group, $val);
+      }
+      $val;
+  };
+
+  my $expand = $options->{expand};
+  $expand = 1 unless defined $expand;
+
+  my $isInGroup = $this->{isInGroupCache}{$cUID} ? $this->{isInGroupCache}{$cUID}{$group} : undef;
+  return $isInGroup if defined $isInGroup;
+  $isInGroup = $this->{ldap}->getIsInGroup($cUID, $group);
+  return $isInGroup if defined $isInGroup;
+
+  local $scanning{$group} = 1;
+  my $it = $this->eachGroupMember( $group, { expand => 0 } );
+  while ( $it->hasNext() ) {
+      my $u = $it->next();
+      next if $scanning{$u};
+
+       if ($u eq $cUID) {
+           return $cache->($cUID, $group, 1);
+       }
+       if ( $expand && $this->isGroup($u) && $this->isInGroup( $cUID, $u )) {
+           return $cache->($cUID, $group, 1);
+       }
+   }
+   return $cache->($cUID, $group, 0);
 }
 
 1;
