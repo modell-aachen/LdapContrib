@@ -1,6 +1,6 @@
 # Module of Foswiki - The Free and Open Source Wiki, http://foswiki.org/
 #
-# Copyright (C) 2006-2014 Michael Daum http://michaeldaumconsulting.com
+# Copyright (C) 2006-2015 Michael Daum http://michaeldaumconsulting.com
 # Portions Copyright (C) 2006 Spanlink Communications
 #
 # This program is free software; you can redistribute it and/or
@@ -16,7 +16,7 @@
 # As per the GPL, removal of this notice is prohibited.
 
 package Foswiki::Users::LdapPasswdUser;
-use Foswiki::Users::Password;
+use Foswiki::Users::Password ();
 our @ISA = qw( Foswiki::Users::Password );
 
 use strict;
@@ -28,7 +28,7 @@ use Foswiki::ListIterator ();
 
 =pod
 
----+ Foswiki::Users::LdapPassdUser
+---+ Foswiki::Users::LdapPasswdUser
 
 Password manager that uses Net::LDAP to manage users and passwords.
 
@@ -73,7 +73,7 @@ return the last error during LDAP operations
 sub error {
   my $this = shift;
   $this->{error} = $this->{ldap}->getError();
-  return return $this->{error};
+  return $this->{error};
 }
 
 =pod
@@ -183,7 +183,7 @@ we can change passwords, so return false
 sub readOnly {
   my $this = shift;
 
-  if ($Foswiki::cfg{Ldap}{AllowChangePassword}) {
+  if ($this->{ldap}->{allowChangePassword}) {
     $this->{session}->enterContext('passwords_modifyable');
   }
 }
@@ -327,7 +327,16 @@ Otherwise returns 1 on success, undef on failure.
 sub setPassword {
   my ($this, $login, $newUserPassword, $oldUserPassword) = @_;
 
-  my $isOk = $this->{ldap}->changePassword($login, $newUserPassword, $oldUserPassword);
+  my $isOk = 1;
+
+  unless ($this->{ldap}->{allowChangePassword}) {
+    $isOk = 0;
+    $this->{error} = "setting password not allowed by configuration";    
+  }
+
+  if ($isOk) {
+    $isOk = $this->{ldap}->changePassword($login, $newUserPassword, $oldUserPassword);
+  }
 
   if ($isOk) {
     $this->{error} = undef;
@@ -335,7 +344,7 @@ sub setPassword {
   }
 
   $this->error();
-  return undef;
+  return 0;
 }
 
 =pod

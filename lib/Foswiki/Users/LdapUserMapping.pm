@@ -1,6 +1,6 @@
 # Module of Foswiki - The Free and Open Source Wiki http://foswiki.org/
 #
-# Copyright (C) 2006-2014 Michael Daum http://michaeldaumconsulting.com
+# Copyright (C) 2006-2015 Michael Daum http://michaeldaumconsulting.com
 # Portions Copyright (C) 2006 Spanlink Communications
 #
 # This program is free software; you can redistribute it and/or
@@ -137,10 +137,23 @@ sub getLoginName {
 # Reverse the encoding used to generate cUIDs in login2cUID
 # use bytes to ignore character encoding
 sub _mapcUID2Login {
+  my $cUID = shift;
+
+  # SMELL: disabled this to allow underscores in login names
+  use bytes;
+  $cUID =~ s/_([0-9a-f][0-9a-f])/chr(hex($1))/gei;
+  no bytes;
+
+  return $cUID;
+}
+
+# local copy of Foswiki::Users::mapLogin2cUID
+sub _mapLogin2cUID {
   my $login = shift;
 
+  # SMELL: disabled this to allow underscores in login names
   use bytes;
-  $login =~ s/_([0-9a-f][0-9a-f])/chr(hex($1))/gei;
+  $login =~ s/([^a-zA-Z0-9])/'_'.sprintf('%02x', ord($1))/ge;
   no bytes;
 
   return $login;
@@ -566,8 +579,8 @@ sub login2cUID {
     return $cUID;
   }
 
-  $name = $this->{ldap}->locale_lc($name) unless $this->{ldap}{caseSensitiveLogin};
-  my $cUID = $this->{mapping_id} . Foswiki::Users::mapLogin2cUID($name);
+  #$name = lc($name) unless $this->{ldap}{caseSensitiveLogin};
+  my $cUID = $this->{mapping_id} . _mapLogin2cUID($name);
 
   my $valid = $loginName || $this->{ldap}->getWikiNameOfLogin($name);
   $this->{ldap}->putLogin2cUID($name, $cUID) if $valid;
