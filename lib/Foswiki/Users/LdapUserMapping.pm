@@ -128,7 +128,7 @@ sub getLoginName {
 
   $login = _mapcUID2Login($login);
 
-  $login = $this->{ldap}->locale_lc($login) unless $this->{ldap}{caseSensitiveLogin};
+  $login = lc($login) unless $this->{ldap}{caseSensitiveLogin};
 
   return $login if $this->{ldap}->getWikiNameOfLogin($login);
   return $login;

@@ -296,7 +296,7 @@ sub new {
   if ($this->{caseSensitiveLogin}) {
     %excludeMap = map { $_ => 1 } split(/\s*,\s*/, $this->{exclude});
   } else {
-    %excludeMap = map { $_ => 1, $this->locale_lc($_) => 1 } split(/\s*,\s*/, $this->{exclude});
+    %excludeMap = map { $_ => 1, lc($_) => 1 } split(/\s*,\s*/, $this->{exclude});
   }
   $this->{excludeMap} = \%excludeMap;
 
@@ -574,7 +574,7 @@ sub getAccount {
   writeDebug("called getAccount($loginName)");
 
   # take care of login case
-  $loginName = $this->locale_lc($loginName) unless $this->{caseSensitiveLogin};
+  $loginName = lc($loginName) unless $this->{caseSensitiveLogin};
 
   my $loginFilter = $this->{loginFilter};
   $loginFilter = "($loginFilter)" unless $loginFilter =~ /^\(.*\)$/;
@@ -1403,7 +1403,7 @@ sub cacheUserFromEntry {
   $loginName = $this->fromLdapCharSet($loginName);
 
   # 2. normalize
-  $loginName = $this->locale_lc($loginName) unless $this->{caseSensitiveLogin};
+  $loginName = lc($loginName) unless $this->{caseSensitiveLogin};
   $loginName = $this->rewriteLoginName($loginName);
   $loginName = $this->normalizeLoginName($loginName) if $this->{normalizeLoginName};
   return 0 if $this->{excludeMap}{$loginName};
@@ -1652,7 +1652,7 @@ sub cacheGroupFromEntry {
     return 0;
   }
 
-  my $loginName = $this->{caseSensitiveLogin} ? $groupName : $this->locale_lc($groupName);
+  my $loginName = $this->{caseSensitiveLogin} ? $groupName : lc($groupName);
   if (defined($data->{"U2W::$loginName"}) || defined($data->{"W2U::$groupName"})) {
     if ($this->{ignorePrivateGroups}) {
       writeDebug("ignoring private group $groupName as there is a login of that kind already");
@@ -2165,7 +2165,7 @@ sub _isGroup {
   return 1 if defined($data->{"GROUPS::$wikiName"});
   return 0 if defined($data->{"W2U::$wikiName"});
 
-  my $loginName = $this->{caseSensitiveLogin} ? $wikiName : $this->locale_lc($wikiName);
+  my $loginName = $this->{caseSensitiveLogin} ? $wikiName : lc($wikiName);
   return 0 if defined($data->{"U2W::$loginName"});
 
   unless ($this->{preCache}) {
@@ -2187,7 +2187,7 @@ fetch emails from LDAP
 sub getEmails {
   my ($this, $loginName, $data) = @_;
 
-  $loginName = $this->locale_lc($loginName) unless $this->{caseSensitiveLogin};
+  $loginName = lc($loginName) unless $this->{caseSensitiveLogin};
   $data ||= $this->{data};
 
   $this->checkCacheForLoginName($loginName, $data) unless $this->{preCache};
@@ -2278,7 +2278,7 @@ sub getWikiNameOfLogin {
 
   #writeDebug("called getWikiNameOfLogin($loginName)");
 
-  $loginName = $this->locale_lc($loginName) unless $this->{caseSensitiveLogin};
+  $loginName = lc($loginName) unless $this->{caseSensitiveLogin};
   $data ||= $this->{data};
 
   unless ($this->{preCache}) {
@@ -2364,7 +2364,7 @@ returns the Distinguished Name of the LDAP record of the given name
 sub getDnOfLogin {
   my ($this, $loginName, $data) = @_;
 
-  $loginName = $this->locale_lc($loginName) unless $this->{caseSensitiveLogin};
+  $loginName = lc($loginName) unless $this->{caseSensitiveLogin};
   $data ||= $this->{data};
 
   return Foswiki::Sandbox::untaintUnchecked($data->{"U2DN::$loginName"});
@@ -2484,7 +2484,7 @@ sub checkCacheForLoginName {
 
   writeDebug("called checkCacheForLoginName($loginName)");
 
-  $loginName = $this->locale_lc($loginName) unless $this->{caseSensitiveLogin};
+  $loginName = lc($loginName) unless $this->{caseSensitiveLogin};
   $data ||= $this->{data};
 
   return 1 if $data->{"U2W::$loginName"};
