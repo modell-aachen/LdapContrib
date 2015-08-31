@@ -1545,9 +1545,9 @@ sub cacheUserFromEntry {
   if ($this->{displayAttributes}) {
     my $extradata = {};
     for my $attr (@{$this->{displayAttributes}}) {
-      $extradata->{$attr} = $entry->get_value($attr);
+      $extradata->{$attr} = $this->fromLdapCharSet($entry->get_value($attr));
     }
-    $data->{"U2DIS::$loginName"} = encode_json($extradata);
+    $data->{"U2DIS::$loginName"} = to_json($extradata);
   }
 
   if ($emails) {
@@ -2427,7 +2427,7 @@ sub getDisplayAttributesOfLogin {
 
   $data ||= $this->{data};
 
-  return decode_json(Foswiki::Sandbox::untaintUnchecked($data->{"U2DIS::$login"} || "{}"));
+  return from_json(Foswiki::Sandbox::untaintUnchecked($data->{"U2DIS::$login"} || "{}"));
 }
 
 
