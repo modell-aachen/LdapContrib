@@ -440,14 +440,6 @@ sub connect {
       $msg = $this->{ldap}->bind;
     }
 
-  } 
-
-  # simple bind
-  elsif ($this->{bindDN} && $this->{bindPassword}) {
-    #writeDebug("proxy bind");
-    $msg = $this->{ldap}->bind($this->toLdapCharSet($this->{bindDN}),
-      password => $this->toLdapCharSet($this->{bindPassword})
-    );
   }
 
   $this->{isConnected} = ($this->checkError($msg) == LDAP_SUCCESS) ? 1 : 0;
