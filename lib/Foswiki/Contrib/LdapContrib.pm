@@ -2876,6 +2876,7 @@ sub fromLdapCharSet {
   if ($Foswiki::UNICODE) {
     return Encode::decode($ldapCharSet, $string);
   }
+  my $siteCharSet = $Foswiki::cfg{Site}{CharSet};
 
   Encode::from_to($string, $ldapCharSet, $siteCharSet) unless $ldapCharSet eq $siteCharSet;
   return $string;
@@ -2907,11 +2908,11 @@ sub toLdapCharSet {
   my ($this, $string) = @_;
 
   my $ldapCharSet = $Foswiki::cfg{Ldap}{CharSet} || 'utf-8';
-  my $siteCharSet = $Foswiki::cfg{Site}{CharSet};
 
   if ($Foswiki::UNICODE) {
     return Encode::encode($ldapCharSet, $string);
   }
+  my $siteCharSet = $Foswiki::cfg{Site}{CharSet};
 
   Encode::from_to($string, $siteCharSet, $ldapCharSet) unless $ldapCharSet eq $siteCharSet;
   return $string;
