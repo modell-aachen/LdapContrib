@@ -715,7 +715,51 @@ sub _followLink {
 
   # trick in new connection
   $this->connect(undef, undef, $host, $port);
-  $this->search(%thisArgs);
+
+  # use the control LDAP extension only if a valid pageSize value has been provided
+  my $page;
+  my $cookie;
+  if ($this->{pageSize} > 0) {
+    require Net::LDAP::Control::Paged;
+    $page = Net::LDAP::Control::Paged->new(size => $this->{pageSize});
+    $thisArgs{control} = [$page];
+  }
+
+  # read pages
+  while (1) {
+    # perform search
+    my $mesg = $this->search(%thisArgs);
+    unless ($mesg) {
+      writeWarning("error fetching data from referred server: " . $this->getError());
+      last;
+    }
+
+    # only use cookies and pages if we are using this extension
+    if ($page) {
+      # get cookie from paged control to remember the offset
+      my ($resp) = $mesg->control(LDAP_CONTROL_PAGED) or last;
+
+      $cookie = $resp->cookie or last;
+      if ($cookie) {
+        # set cookie in paged control
+        $page->cookie($cookie);
+      } else {
+        # found all
+        last;
+      }
+    } else {
+      # one chunk ends here
+      last;
+    }
+  }    # end reading pages
+
+  # clean up
+  if ($cookie) {
+    $page->cookie($cookie);
+    $page->size(0);
+    $this->search(%thisArgs);
+  }
+
   $this->disconnect;
 
   # restore old connection
@@ -1653,7 +1697,7 @@ sub cacheGroupFromEntry {
 
       while ( my $result = $results->pop_entry() ) {
         my $rdn = $result->dn();
-        my $contains = grep { $members[$_] ~~ $rdn; } 0 .. $#members;
+        my $contains = grep { $members[$_] eq $rdn; } 0 .. $#members;
         if ( !$contains ) {
           push( @members, $rdn );
         }
