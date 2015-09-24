@@ -170,6 +170,15 @@ $Foswiki::cfg{Ldap}{MailAttribute} = 'mail';
 $Foswiki::cfg{Ldap}{DisplayAttributes} = 'displayName';
 
 # **STRING**
+# Formatting string for generating a "display name" (human-friendly label for a user).
+# You can use $x to refer to the value of field x, but only if it is imported
+# using {Ldap}{DisplayAttributes}.
+# Additionally, you can use the following syntax: $x(pre|post|alt)
+# In case there is a value for the field, 'pre' will be prepended and 'post' will be appended.
+# 'alt' will be used for the value, without 'pre' and 'post', if no value exists for the user.
+$Foswiki::cfg{Ldap}{DisplayNameFormat} = '$displayName';
+
+# **STRING**
 # The user's wiki name attribute. This is the attribute to generate
 # the WikiName from.
 $Foswiki::cfg{Ldap}{WikiNameAttributes} = 'givenName,sn';

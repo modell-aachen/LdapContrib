@@ -198,6 +198,39 @@ sub getWikiName {
   return $wikiName;
 }
 
+=pod
+
+---++ getDisplayName($cUID) -> $displayName
+
+Fetches a human-readable representation of the user's name, e.g. "John Doe".
+If a display name cannot be generated, falls back to WikiName and finally login
+name.
+
+=cut
+
+sub getDisplayName {
+  my ($this, $cUID) = @_;
+
+  my $loginName = _mapcUID2Login($cUID);
+  my $dattr = $this->{ldap}->getDisplayAttributesOfLogin($loginName);
+  my $res;
+  unless (ref $dattr) {
+    $res = $this->{ldap}->getWikiNameOfLogin($loginName);
+    $res = $loginName unless $res;
+    return $res;
+  }
+  $res = $Foswiki::cfg{Ldap}{DisplayNameFormat} || '$displayName';
+  $res =~ s/\$(\w+)\((.*?)\)/
+    my $k = $1;
+    my ($pre, $post, $alt) = split(m#\|#, $2);
+    exists $dattr->{$k} ? $pre.$dattr->{$k}.$post : $alt;
+  /eg;
+  while (my ($k, $v) = each(%$dattr)) {
+    $res =~ s/\$$k\b/$v/g;
+  }
+  $res;
+}
+
 =pod 
 
 ---++ getEmails($cUID) -> @emails
