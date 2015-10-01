@@ -2292,7 +2292,8 @@ returns the loginNAme of a wikiName or undef if it does not exist
 sub getLoginOfWikiName {
   my ($this, $wikiName, $data) = @_;
 
-  return $wikiname2LoginCache->{$this->{cacheFile}}{$wikiName} if exists $wikiname2LoginCache->{$this->{cacheFile}}{$wikiName};
+  # Use cache only if no temporary $data is passed
+  return $wikiname2LoginCache->{$this->{cacheFile}}{$wikiName} if !defined $data && exists $wikiname2LoginCache->{$this->{cacheFile}}{$wikiName};
 
   $data ||= $this->{data};
 
@@ -2304,7 +2305,7 @@ sub getLoginOfWikiName {
       if defined($alias);
   }
 
-  $wikiname2LoginCache->{$this->{cacheFile}}{$wikiName} = $loginName;
+  $wikiname2LoginCache->{$this->{cacheFile}}{$wikiName} = $loginName unless defined $data;
 
   return $loginName;
 }
