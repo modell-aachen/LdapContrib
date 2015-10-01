@@ -292,8 +292,8 @@ there are no additional means to distinguish the names. From there on !WikiNames
 _even when you reconfigure !LdapContrib itself_. This is the default behavior not to risk mapping a different
 identity to a <nop>WikiName.
 
-You still might decide to nuke the decisions once made while resolving name clashes by refreshing the ldap
-cache using the =refreshldap=discard= url parameter (compared to =refreshldap=on= to up the cache regularly).
+You still might decide to nuke the decisions once made while resolving name clashes by deleting the =cache.db=
+file from !LdapContrib's work area and then refreshing the LDAP cache.
 
 %X% Note doing this later in the life time of your wiki might accidentally swap the mapping of LDAP records
 to <nop>WikiNames in case they clash. So be very cautious when doing that.
