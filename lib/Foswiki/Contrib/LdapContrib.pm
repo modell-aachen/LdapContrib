@@ -881,11 +881,11 @@ sub initCache {
   }
 
   # refresh by user interaction
-  my $refresh = '';
-  $refresh = CGI::param('refreshldap') || '';
+  my $refresh;
+  $refresh = CGI::param('refreshldap') || 0;
   $refresh = 2 if $refresh eq 'discard';
   $refresh = 1 if $refresh =~ /[^\d]/;
-  $refresh = 0 unless $refresh;
+  $refresh = 0 unless Foswiki::Func::isAnAdmin();
 
   if ($this->{maxCacheAge} > 0) {    # is cache expiration enabled
 
