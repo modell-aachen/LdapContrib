@@ -1030,9 +1030,9 @@ sub refreshCache {
   untie %tempData;
 
   # try to be transactional
-  $this->untieCache();
   undef $connectionCache->{$this->{cacheFile}};
   undef $dataCache->{$this->{cacheFile}};
+  $this->untieCache();
 
   #writeDebug("replacing working copy");
   rename $tempCacheFile, $this->{cacheFile};
