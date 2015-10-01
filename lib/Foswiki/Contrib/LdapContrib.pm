@@ -33,7 +33,7 @@ use Foswiki::Func ();
 use Foswiki::Plugins ();
 
 our $VERSION = '7.20';
-our $RELEASE = '08 May 2015';
+our $RELEASE = '7.20';
 our %sharedLdapContrib;
 
 # Caches
@@ -883,9 +883,9 @@ sub initCache {
   # refresh by user interaction
   my $refresh;
   $refresh = CGI::param('refreshldap') || 0;
-  $refresh = 2 if $refresh eq 'discard';
+  # Force/discard only possible via direct server access
+  #$refresh = 2 if $refresh eq 'discard';
   $refresh = 1 if $refresh =~ /[^\d]/;
-  $refresh = 0 unless Foswiki::Func::isAnAdmin();
 
   if ($this->{maxCacheAge} > 0) {    # is cache expiration enabled
 
