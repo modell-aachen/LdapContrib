@@ -883,8 +883,8 @@ sub initCache {
   # refresh by user interaction
   my $refresh = '';
   $refresh = CGI::param('refreshldap') || '';
-  $refresh = 1 if $refresh eq 'on';
-  $refresh = 2 if $refresh eq 'force';
+  $refresh = 2 if $refresh eq 'discard';
+  $refresh = 1 if $refresh =~ /[^\d]/;
   $refresh = 0 unless $refresh;
 
   if ($this->{maxCacheAge} > 0) {    # is cache expiration enabled
