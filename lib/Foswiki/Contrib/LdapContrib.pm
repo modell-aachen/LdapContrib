@@ -2568,4 +2568,39 @@ sub locale_lc {
   return $string;
 }
 
+# MaintenancePlugin integration
+sub maintenanceHandler {
+    Foswiki::Plugins::MaintenancePlugin::registerCheck("ldapcontrib:debug", {
+        name => "LdapContrib debug mode",
+        description => "LdapContrib debug mode is disabled.",
+        check => sub {
+            my $result = { result => 0 };
+            if ( ( exists $Foswiki::cfg{Ldap}{Debug} ) and ( $Foswiki::cfg{Ldap}{Debug} ) ) {
+                $result->{result} = 1;
+                $result->{priority} = $Foswiki::Plugins::MaintenancePlugin::ERROR;
+                $result->{solution} = "Disable {Ldap}{Debug}.";
+            }
+            return $result;
+        }
+    });
+    Foswiki::Plugins::MaintenancePlugin::registerCheck("ldapcontrib:refresh", {
+        name => "LdapContrib: Cronjob for ldaprefresh exists.",
+        description => "Check if a cronjob with refreshldap=on exists",
+        check => sub {
+            my $result = { result => 0 };
+            if ( $Foswiki::cfg{LoginManager} =~ /(Ldap)|(Switchable)|(Kerberos)/ ) {
+                    # Read crontab for webserver user
+                    my $ct = qx(crontab -l);
+                    unless ( $ct =~ /refreshldap=on/ ) {
+                        $result->{result} = 1;
+                        $result->{priority} = $Foswiki::Plugins::MaintenancePlugin::ERROR;
+                        my ( $name, @rest ) = getpwuid( $< );
+                        $result->{solution} = "Add refreshldap cronjob to to crontab for user \"$name\" as described in documentation";
+                    }
+            }
+            return $result;
+        }
+    });
+}
+
 1;
