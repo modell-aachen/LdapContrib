@@ -598,6 +598,8 @@ This is used for registration)
 sub login2cUID {
   my ($this, $name, $dontcheck) = @_;
 
+  $name = $this->{ldap}->locale_lc($name) unless $this->{ldap}{caseSensitiveLogin};
+
   my $cached = $this->{ldap}->getLogin2cUID($name);
   return $cached if defined $cached;
 
