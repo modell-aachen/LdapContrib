@@ -27,7 +27,7 @@ $Foswiki::cfg{Ldap}{IPv6} = 0;
 # **NUMBER**
 # Ldap protocol version to use when querying the server;
 # Possible values are: 2, 3
-$Foswiki::cfg{Ldap}{Version} = '3';
+$Foswiki::cfg{Ldap}{Version} = 3;
 
 # **STRING**
 # Base DN to use in searches
