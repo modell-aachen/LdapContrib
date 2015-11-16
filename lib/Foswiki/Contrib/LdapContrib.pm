@@ -2955,7 +2955,7 @@ sub maintenanceHandler {
             if ($Foswiki::cfg{Ldap}{CaseSensitivity}) {
                 $result->{result} = 1;
                 $result->{priority} = $Foswiki::Plugins::MaintenancePlugin::ERROR;
-                $result->{solution} = "Set option {Ldap}{CaseSensitivityLogin} according to {Ldap}{CaseSensitivity} (off=false, on=true,currently set to: '" . $Foswiki::cfg{Ldap}{CaseSensitivity} . "'), then remove {Ldap}{CaseSensitivity} manually from LocalSite.cfg.";
+                $result->{solution} = "Set option {Ldap}{CaseSensitiveLogin} according to {Ldap}{CaseSensitivity} (off=false, on=true,currently set to: '" . $Foswiki::cfg{Ldap}{CaseSensitivity} . "'), then remove {Ldap}{CaseSensitivity} manually from LocalSite.cfg.";
             }
             return $result;
         }
