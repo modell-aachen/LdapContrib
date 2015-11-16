@@ -185,7 +185,7 @@ sub new {
     groupScope => $Foswiki::cfg{Ldap}{GroupScope}
       || 'sub',
 
-    loginAttribute => $Foswiki::cfg{Ldap}{LoginAttribute} || 'uid',
+    loginAttribute => $Foswiki::cfg{Ldap}{LoginAttribute} || 'sAMAccountName',
     allowChangePassword => $Foswiki::cfg{Ldap}{AllowChangePassword} || 0,
 
     wikiNameAttribute => $Foswiki::cfg{Ldap}{WikiNameAttributes}
