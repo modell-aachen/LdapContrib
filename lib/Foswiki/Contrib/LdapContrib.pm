@@ -190,32 +190,32 @@ sub new {
 
     wikiNameAttribute => $Foswiki::cfg{Ldap}{WikiNameAttributes}
       || $Foswiki::cfg{Ldap}{WikiNameAttribute}
-      || 'cn',
+      || 'givenName,sn',
 
     wikiNameAliases => $Foswiki::cfg{Ldap}{WikiNameAliases} || '',
 
     userMappingTopic => $Foswiki::cfg{Ldap}{UserMappingTopic} || '',
 
-    normalizeWikiName => $Foswiki::cfg{Ldap}{NormalizeWikiNames},
-    normalizeLoginName => $Foswiki::cfg{Ldap}{NormalizeLoginNames},
+    normalizeWikiName => $Foswiki::cfg{Ldap}{NormalizeWikiNames} || 1,
+    normalizeLoginName => $Foswiki::cfg{Ldap}{NormalizeLoginNames} || 0,
     caseSensitiveLogin => $Foswiki::cfg{Ldap}{CaseSensitiveLogin} || 0,
-    normalizeGroupName => $Foswiki::cfg{Ldap}{NormalizeGroupNames},
-    ignorePrivateGroups => $Foswiki::cfg{Ldap}{IgnorePrivateGroups},
+    normalizeGroupName => $Foswiki::cfg{Ldap}{NormalizeGroupNames} || 0,
+    ignorePrivateGroups => $Foswiki::cfg{Ldap}{IgnorePrivateGroups} || 1,
 
-    loginFilter => $Foswiki::cfg{Ldap}{LoginFilter} || 'objectClass=posixAccount',
+    loginFilter => $Foswiki::cfg{Ldap}{LoginFilter} || 'objectClass=person',
 
     groupAttribute => $Foswiki::cfg{Ldap}{GroupAttribute} || 'cn',
     primaryGroupAttribute => $Foswiki::cfg{Ldap}{PrimaryGroupAttribute} || 'gidNumber',
-    groupFilter => $Foswiki::cfg{Ldap}{GroupFilter} || 'objectClass=posixGroup',
-    memberAttribute => $Foswiki::cfg{Ldap}{MemberAttribute} || 'memberUid',
-    innerGroupAttribute => $Foswiki::cfg{Ldap}{InnerGroupAttribute} || 'uniquegroup',
-    memberIndirection => $Foswiki::cfg{Ldap}{MemberIndirection} || 0,
-    nativeGroupsBackoff => $Foswiki::cfg{Ldap}{WikiGroupsBackoff} || 0,
+    groupFilter => $Foswiki::cfg{Ldap}{GroupFilter} || 'objectClass=group',
+    memberAttribute => $Foswiki::cfg{Ldap}{MemberAttribute} || 'member',
+    innerGroupAttribute => $Foswiki::cfg{Ldap}{InnerGroupAttribute} || 'member',
+    memberIndirection => $Foswiki::cfg{Ldap}{MemberIndirection} || 1,
+    nativeGroupsBackoff => $Foswiki::cfg{Ldap}{WikiGroupsBackoff} || 1,
     bindDN => $Foswiki::cfg{Ldap}{BindDN} || '',
     bindPassword => $Foswiki::cfg{Ldap}{BindPassword} || '',
     mapGroups => $Foswiki::cfg{Ldap}{MapGroups} || 0,
     rewriteGroups => $Foswiki::cfg{Ldap}{RewriteGroups} || {},
-    rewriteWikiNames => $Foswiki::cfg{Ldap}{RewriteWikiNames} || {},
+    rewriteWikiNames => $Foswiki::cfg{Ldap}{RewriteWikiNames} ||  { '^(.*)@.*$' => '$1' },
     rewriteLoginNames => $Foswiki::cfg{Ldap}{RewriteLoginNames} || [],
     mergeGroups => $Foswiki::cfg{Ldap}{MergeGroups} || 0,
 

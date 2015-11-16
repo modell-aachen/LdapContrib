@@ -208,9 +208,7 @@ $Foswiki::cfg{Ldap}{WikiNameAliases} = '';
 # substitute might contain $1, $2, ... , $5 to insert the first, second, ..., fifth
 # bracket pair in the key pattern. (see perl manual for regular expressions).
 # Example: '(.*)_users' => '$1'
-$Foswiki::cfg{Ldap}{RewriteWikiNames} = {
-  '^(.*)@.*$' => '$1'
-};
+$Foswiki::cfg{Ldap}{RewriteWikiNames} = { '^(.*)@.*$' => '$1' };
 
 # **PERL**
 # A mapping of rewrite rules. Works just like the previous setting, but
@@ -221,8 +219,7 @@ $Foswiki::cfg{Ldap}{RewriteWikiNames} = {
 #   ['pattern1' => 'substitute1',
 #   ['pattern2' => 'substitute2'
 # ]</pre>
-$Foswiki::cfg{Ldap}{RewriteLoginNames} = [
-];
+$Foswiki::cfg{Ldap}{RewriteLoginNames} = [];
 
 # **BOOLEAN**
 # Allow/disallow changing the LDAP password using the ChangePassword feature
@@ -232,7 +229,7 @@ $Foswiki::cfg{Ldap}{AllowChangePassword} = 0;
 # This parameter allows to hard-code a LoginName-to-WikiName mapping in a wiki topic. This 
 # feature may be used to migrate from a TopicUserMapping to LdapUserMapping by preserving any already existing
 # mapping stored in Main.WikiUsers. Leave it empty to disable this feature and build WikiNames by reading
-# LDAP attributes as normal. 
+# LDAP attributes as normal.
 $Foswiki::cfg{Ldap}{UserMappingTopic} = '';
 
 # ---+++ Group settings
@@ -330,8 +327,7 @@ $Foswiki::cfg{Ldap}{RewriteGroups} = {
 #   'group2' => 'primaryGroupId2'
 # }</pre>
 # Example: 'CN=Domain Users,CN=Builtin,DC=example,DC=com' => '513'
-$Foswiki::cfg{Ldap}{PrimaryGroupMapping} = {
-};
+$Foswiki::cfg{Ldap}{PrimaryGroupMapping} = {};
 
 # **BOOLEAN**
 # Flag indicating if groups that get the same are merged. For exmaple, given two
