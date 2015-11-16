@@ -186,7 +186,6 @@ sub new {
       || 'sub',
 
     loginAttribute => $Foswiki::cfg{Ldap}{LoginAttribute} || 'uid',
-    caseSensitivity=>$Foswiki::cfg{Ldap}{CaseSensitivity} || '',
     allowChangePassword => $Foswiki::cfg{Ldap}{AllowChangePassword} || 0,
 
     wikiNameAttribute => $Foswiki::cfg{Ldap}{WikiNameAttributes}
@@ -245,10 +244,6 @@ sub new {
 
     @_
   };
-  # Modell Aachen custom
-  if ($Foswiki::cfg{Ldap}{CaseSensitivity} && $Foswiki::cfg{Ldap}{CaseSensitivity} eq 'on') {
-    $this->{caseSensitiveLogin} = 1;
-  }
   bless($this, $class);
 
   $this->{session} = $session;
@@ -2948,6 +2943,19 @@ sub maintenanceHandler {
                         my ( $name, @rest ) = getpwuid( $< );
                         $result->{solution} = "Add refreshldap cronjob to to crontab for user \"$name\" as described in documentation";
                     }
+            }
+            return $result;
+        }
+    });
+    Foswiki::Plugins::MaintenancePlugin::registerCheck("ldapcontrib:legacycasesensitivity", {
+        name => "LdapContrib: Legacy option CaseSensitivy is not set.",
+        description => "Check if {Ldap}{CaseSensitivity} not is set.",
+        check => sub {
+            my $result = { result => 0 };
+            if ($Foswiki::cfg{Ldap}{CaseSensitivity}) {
+                $result->{result} = 1;
+                $result->{priority} = $Foswiki::Plugins::MaintenancePlugin::ERROR;
+                $result->{solution} = "Set option {Ldap}{CaseSensitivityLogin} according to {Ldap}{CaseSensitivity} (off=false, on=true,currently set to: '" . $Foswiki::cfg{Ldap}{CaseSensitivity} . "'), then remove {Ldap}{CaseSensitivity} manually from LocalSite.cfg.";
             }
             return $result;
         }

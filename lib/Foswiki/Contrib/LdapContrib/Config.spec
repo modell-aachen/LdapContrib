@@ -152,14 +152,6 @@ $Foswiki::cfg{Ldap}{UserScope} = 'sub';
 $Foswiki::cfg{Ldap}{LoginAttribute} = 'sAMAccountName';
 
 # **STRING**
-# The case sensitivity attribute. This is the attribute name used to enable
-# case insensitivity.
-# Note that this is for backwards compatibility; it will only have an effect if set to 'on'
-# (the effect will be equal to enabling {caseSensitiveLogin}; the actual value of that setting will be ignored).
-# Please use {caseSensitiveLogin} instead.
-$Foswiki::cfg{Ldap}{CaseSensitivity} = '';
-
-# **STRING**
 # The user mail attribute. This is the attribute name used to fetch
 # users e-mail.
 $Foswiki::cfg{Ldap}{MailAttribute} = 'mail';
@@ -195,7 +187,7 @@ $Foswiki::cfg{Ldap}{NormalizeWikiNames} = 1;
 $Foswiki::cfg{Ldap}{NormalizeLoginNames} = 0;
 
 # **BOOLEAN**
-# Enable/disable case sensitive login names. If disabled case doesn't matter logging in.
+# Enable/disable case sensitive login names. If disabled case doesn't matter while logging in.
 $Foswiki::cfg{Ldap}{CaseSensitiveLogin} = 0;
 
 # **STRING**
