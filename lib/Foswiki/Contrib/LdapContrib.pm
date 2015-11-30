@@ -185,38 +185,37 @@ sub new {
     groupScope => $Foswiki::cfg{Ldap}{GroupScope}
       || 'sub',
 
-    loginAttribute => $Foswiki::cfg{Ldap}{LoginAttribute} || 'uid',
-    caseSensitivity=>$Foswiki::cfg{Ldap}{CaseSensitivity} || '',
+    loginAttribute => $Foswiki::cfg{Ldap}{LoginAttribute} || 'sAMAccountName',
     allowChangePassword => $Foswiki::cfg{Ldap}{AllowChangePassword} || 0,
 
     wikiNameAttribute => $Foswiki::cfg{Ldap}{WikiNameAttributes}
       || $Foswiki::cfg{Ldap}{WikiNameAttribute}
-      || 'cn',
+      || 'givenName,sn',
 
     wikiNameAliases => $Foswiki::cfg{Ldap}{WikiNameAliases} || '',
 
     userMappingTopic => $Foswiki::cfg{Ldap}{UserMappingTopic} || '',
 
-    normalizeWikiName => $Foswiki::cfg{Ldap}{NormalizeWikiNames},
-    normalizeLoginName => $Foswiki::cfg{Ldap}{NormalizeLoginNames},
+    normalizeWikiName => $Foswiki::cfg{Ldap}{NormalizeWikiNames} || 1,
+    normalizeLoginName => $Foswiki::cfg{Ldap}{NormalizeLoginNames} || 0,
     caseSensitiveLogin => $Foswiki::cfg{Ldap}{CaseSensitiveLogin} || 0,
-    normalizeGroupName => $Foswiki::cfg{Ldap}{NormalizeGroupNames},
-    ignorePrivateGroups => $Foswiki::cfg{Ldap}{IgnorePrivateGroups},
+    normalizeGroupName => $Foswiki::cfg{Ldap}{NormalizeGroupNames} || 0,
+    ignorePrivateGroups => $Foswiki::cfg{Ldap}{IgnorePrivateGroups} || 1,
 
-    loginFilter => $Foswiki::cfg{Ldap}{LoginFilter} || 'objectClass=posixAccount',
+    loginFilter => $Foswiki::cfg{Ldap}{LoginFilter} || 'objectClass=person',
 
     groupAttribute => $Foswiki::cfg{Ldap}{GroupAttribute} || 'cn',
     primaryGroupAttribute => $Foswiki::cfg{Ldap}{PrimaryGroupAttribute} || 'gidNumber',
-    groupFilter => $Foswiki::cfg{Ldap}{GroupFilter} || 'objectClass=posixGroup',
-    memberAttribute => $Foswiki::cfg{Ldap}{MemberAttribute} || 'memberUid',
-    innerGroupAttribute => $Foswiki::cfg{Ldap}{InnerGroupAttribute} || 'uniquegroup',
-    memberIndirection => $Foswiki::cfg{Ldap}{MemberIndirection} || 0,
-    nativeGroupsBackoff => $Foswiki::cfg{Ldap}{WikiGroupsBackoff} || 0,
+    groupFilter => $Foswiki::cfg{Ldap}{GroupFilter} || 'objectClass=group',
+    memberAttribute => $Foswiki::cfg{Ldap}{MemberAttribute} || 'member',
+    innerGroupAttribute => $Foswiki::cfg{Ldap}{InnerGroupAttribute} || 'member',
+    memberIndirection => $Foswiki::cfg{Ldap}{MemberIndirection} || 1,
+    nativeGroupsBackoff => $Foswiki::cfg{Ldap}{WikiGroupsBackoff} || 1,
     bindDN => $Foswiki::cfg{Ldap}{BindDN} || '',
     bindPassword => $Foswiki::cfg{Ldap}{BindPassword} || '',
     mapGroups => $Foswiki::cfg{Ldap}{MapGroups} || 0,
     rewriteGroups => $Foswiki::cfg{Ldap}{RewriteGroups} || {},
-    rewriteWikiNames => $Foswiki::cfg{Ldap}{RewriteWikiNames} || {},
+    rewriteWikiNames => $Foswiki::cfg{Ldap}{RewriteWikiNames} ||  { '^(.*)@.*$' => '$1' },
     rewriteLoginNames => $Foswiki::cfg{Ldap}{RewriteLoginNames} || [],
     mergeGroups => $Foswiki::cfg{Ldap}{MergeGroups} || 0,
 
@@ -245,10 +244,6 @@ sub new {
 
     @_
   };
-  # Modell Aachen custom
-  if ($Foswiki::cfg{Ldap}{CaseSensitivity} && $Foswiki::cfg{Ldap}{CaseSensitivity} eq 'on') {
-    $this->{caseSensitiveLogin} = 1;
-  }
   bless($this, $class);
 
   $this->{session} = $session;
@@ -2948,6 +2943,19 @@ sub maintenanceHandler {
                         my ( $name, @rest ) = getpwuid( $< );
                         $result->{solution} = "Add refreshldap cronjob to to crontab for user \"$name\" as described in documentation";
                     }
+            }
+            return $result;
+        }
+    });
+    Foswiki::Plugins::MaintenancePlugin::registerCheck("ldapcontrib:legacycasesensitivity", {
+        name => "LdapContrib: Legacy option CaseSensitivy is not set.",
+        description => "Check if {Ldap}{CaseSensitivity} not is set.",
+        check => sub {
+            my $result = { result => 0 };
+            if ($Foswiki::cfg{Ldap}{CaseSensitivity}) {
+                $result->{result} = 1;
+                $result->{priority} = $Foswiki::Plugins::MaintenancePlugin::ERROR;
+                $result->{solution} = "Set option {Ldap}{CaseSensitiveLogin} according to {Ldap}{CaseSensitivity} (off=false, on=true,currently set to: '" . $Foswiki::cfg{Ldap}{CaseSensitivity} . "'), then remove {Ldap}{CaseSensitivity} manually from LocalSite.cfg.";
             }
             return $result;
         }
