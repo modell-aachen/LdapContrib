@@ -86,7 +86,7 @@ sub loadSession {
     #print STDERR "after authUser=$authUser\n";
 
     unless ($this->{ldap}{excludeMap}{$authUser}) {
-      $this->{ldap}->checkCacheForLoginName($authUser);
+      $this->{ldap}->checkCacheForLoginName($authUser) unless $this->{ldap}{preCache};
     } else {
       return $origAuthUser;
     }
