@@ -2921,10 +2921,10 @@ sub maintenanceHandler {
         description => "LdapContrib debug mode is disabled.",
         check => sub {
             my $result = { result => 0 };
-            if ( ( exists $Foswiki::cfg{Ldap}{Debug} ) and ( $Foswiki::cfg{Ldap}{Debug} ) ) {
+            if ((exists $Foswiki::cfg{Ldap}{Debug}) && ($Foswiki::cfg{Ldap}{Debug})) {
                 $result->{result} = 1;
                 $result->{priority} = $Foswiki::Plugins::MaintenancePlugin::ERROR;
-                $result->{solution} = "Disable {Ldap}{Debug}.";
+                $result->{solution} = "Disable {Ldap}{Debug} in configure.";
             }
             return $result;
         }
@@ -2933,15 +2933,31 @@ sub maintenanceHandler {
         name => "LdapContrib: Cronjob for ldaprefresh exists.",
         description => "Check if a cronjob with refreshldap=on exists",
         check => sub {
+            require File::Spec;
             my $result = { result => 0 };
-            if ( $Foswiki::cfg{LoginManager} =~ /(Ldap)|(Switchable)|(Kerberos)/ ) {
+            if ($Foswiki::cfg{LoginManager} =~ /(Ldap)|(Switchable)|(Kerberos)/) {
                     # Read crontab for webserver user
-                    my $ct = qx(crontab -l);
-                    unless ( $ct =~ /refreshldap=on/ ) {
+                    my $fn = File::Spec->catfile('/', 'etc', 'cron.d', 'foswiki_jobs');
+                    if ( -f $fn) {
+                        my $fh;
+                        if (open($fh, '<', $fn)) {
+                            $/ = undef;
+                            my $crontab = <$fh>;
+                            if ($crontab !~ /refreshldap=on/) {
+                                $result->{result} = 1;
+                                $result->{priority} = $Foswiki::Plugins::MaintenancePlugin::ERROR;
+                                $result->{solution} = sprintf("Add refreshldap cronjob to crontab file '%s' as described in documentation", $fn);
+                            }
+                            close($fh);
+                        } else {
+                            $result->{result} = 1;
+                            $result->{priority} = $Foswiki::Plugins::MaintenancePlugin::ERROR;
+                            $result->{solution} = sprintf("Could not open crontab: %s. Check permissions.", $fn);
+                        }
+                    } else {
                         $result->{result} = 1;
                         $result->{priority} = $Foswiki::Plugins::MaintenancePlugin::ERROR;
-                        my ( $name, @rest ) = getpwuid( $< );
-                        $result->{solution} = "Add refreshldap cronjob to to crontab for user \"$name\" as described in documentation";
+                        $result->{solution} = sprintf("Crontab file not found: %s. This should definitely be there.", $fn);
                     }
             }
             return $result;
