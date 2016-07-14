@@ -488,7 +488,7 @@ sub isGroup {
 
   if ($this->{ldap}{mapGroups}) {
     # ask LDAP
-    $isGroup = $this->{ldap}->isGroup($wikiName);
+    $isGroup = $this->{ldap}->isGroup($wikiName) || $this->{ldap}->isGroup($user);
   }
 
   # backoff if it does not know
