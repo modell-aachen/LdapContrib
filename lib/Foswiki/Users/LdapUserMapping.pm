@@ -226,6 +226,7 @@ sub getDisplayName {
     exists $dattr->{$k} ? $pre.$dattr->{$k}.$post : $alt;
   /eg;
   while (my ($k, $v) = each(%$dattr)) {
+    $v = '' unless defined $v;
     $res =~ s/\$$k\b/$v/g;
   }
   $res;
