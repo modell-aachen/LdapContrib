@@ -2,6 +2,8 @@
 ---+!! %TOPIC%
 %TOC%
 ---++ Introduction
+LdapContrib won't be supported anymore. Please use UnifiedAuthContrib instead.
+
 This package offers basic LDAP services for Foswiki and offers authentication of
 wiki users by binding to an LDAP server as well as incorporate LDAP user
 groups into access control. 
